@@ -18,7 +18,7 @@ from utils.plot_image_grid import visuaize_pts
 from utils.utils import check_exist_or_mkdirs
 from utils.loss import ChamfersDistance3
 import matplotlib.pyplot as plt 
-#os.environ['CUDA_VISIBLE_DEVICES'] = '1'
+os.environ['CUDA_VISIBLE_DEVICES'] = '1'
 
 def class_counter(data_basedir, splits_path, class_path, split_name):
     """return What 3D dataset class and instance information
@@ -240,7 +240,7 @@ def main(args):
                                     results_dir=args.matrix_save_path, ifsave=True)
             computed_cluster_idx.append(cluster_idx)    # log the cluster has been computed 
 
-        ## find one sample in a cluster which has thcd sum of minimum distance to all the samples in the cluster
+        ## find one sample in a cluster which has the minimum sum of distance to all the samples in the cluster
         index = np.argmin(np.sum(pred_matrix, axis=1, keepdims=True), axis=0)
         pred_ptcloud = pred_cluster[index]
         ## save it to prediction set
