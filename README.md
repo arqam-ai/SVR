@@ -39,3 +39,12 @@ python eval_ss.py
 num_of_sample = int(0.001 *  num_of_train_instance)
 ```
 
+##### faster silhouette score dataset:
+
+downsampled pointcloud (1024 points to 256 points) locate at:   ***eval/faster_ss_data/testset_256points.npy***  shape = (10432, 256, 3)
+
+corresponding sampling index locates at  ***eval/faster_ss_data/testset_256points_index.npy***
+
+random sample the faster dataset to 1000 instances:  ***eval/faster_ss_data/testset_ptcloud_random1000.npy***  shape = (1000, 256, 3)
+
+corresponding sampling index locates at ***eval/faster_ss_data/testset_ptcloud_random1000_index.npy***    

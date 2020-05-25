@@ -32,7 +32,7 @@ def tsne(codewords, label, num_of_class):
 	None
 	"""
 	starter_time = time.time()
-	embeddings = TSNE(n_jobs=4).fit_transform(codewords)
+	embeddings = TSNE(n_components=2, perplexity=50, n_jobs=4).fit_transform(codewords)
 	vis_x = embeddings[:, 0]
 	vis_y = embeddings[:, 1]
 	plt.scatter(vis_x, vis_y, c=label, cmap=plt.cm.get_cmap("jet", num_of_class), marker='.', s = 100)
@@ -114,7 +114,7 @@ def load_pred(data_basedir, splits_path, class_path, split_name, results_path, r
 			pred = tmp_pred
 		else:
 			pred = np.concatenate((pred, tmp_pred), axis=0)
-	print(pred.shape)
+	print("Load prediction Shape",pred.shape)
 	return pred, target_index, sorted_class, target_index_dic
 
 
@@ -151,7 +151,7 @@ def main(args):
 	## flatten a pointcloud to a codeword
 	num_of_sample = sampled_pred_pt.shape[0]
 	sampled_codewords = sampled_pred_pt.reshape(num_of_sample, -1)
-
+	print("codewords shape:", sampled_codewords.shape)
 	## plot tsne
 	fig, ax = plt.subplots(figsize=(30, 30))
 	tsne(codewords = sampled_codewords, label = label, num_of_class = 9)
