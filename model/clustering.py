@@ -63,7 +63,7 @@ def class_counter(data_basedir, splits_path, class_path, split_name):
     fileid_list = []
     instance_num = 0
     for clname in tqdm.tqdm(class_list,total= len(class_list), desc = '%s'%split_name):
-        f = open(os.path.join(args.data_basedir, args.splits_path, 'lists', clname, '%s.txt'%split_name),"r")
+        f = open(os.path.join(data_basedir, splits_path, 'lists', clname, '%s.txt'%split_name),"r")
         for x in f:
             fileid_list.append(clname + '/' + x[:-1])
             class_dic[clname] += 1
@@ -225,20 +225,20 @@ def main(args):
     chamfer = ChamfersDistance3().to(args.device)
     
     ## Prediction Pipeline
-    computed_cluster_idx = []                           # log which cluster matrix has been computed
-    pred_ptcloud_set = torch.zeros_like(test_set)       # make space for prediction set 
-    sum_loss = 0                                            # initialize the loss
+    computed_cluster_idx = []                                   # log which cluster matrix has been computed
+    pred_ptcloud_set = torch.zeros_like(test_set)               # make space for prediction set 
+    sum_loss = 0                                                # initialize the loss
     for idx in tqdm.tqdm(range(test_set.shape[0]), desc='Predicting in clustering method'):
-        cluster_idx = pred_list[idx]                    # cluster_idx 0~499
-        trainset_idx = cluster_dic[cluster_idx]         # list of idx train set 0 ~ 36757
-        pred_cluster = train_set[trainset_idx]     # all the samples of the corresponding cluster
-        if cluster_idx in computed_cluster_idx:         # if the cluster matrix has been computed, load it directly         
+        cluster_idx = pred_list[idx]                            # cluster_idx 0~499
+        trainset_idx = cluster_dic[cluster_idx]                 # list of idx train set 0 ~ 36757
+        pred_cluster = train_set[trainset_idx]                  # all the samples of the corresponding cluster
+        if cluster_idx in computed_cluster_idx:                 # if the cluster matrix has been computed, load it directly         
             pred_matrix = np.load(os.path.join(args.matrix_save_path, 'cluster_matrix_{:03}.npy'.format(cluster_idx)))
-        else:                                           # otherwise compute it 
+        else:                                                   # otherwise compute it 
             pred_matrix = compute_ptcloud_dismatrix(X1=pred_cluster, X2=pred_cluster, 
                                         distance_metric=chamfer, title='cluster_matrix_{:03}.npy'.format(cluster_idx), 
                                     results_dir=args.matrix_save_path, ifsave=True)
-            computed_cluster_idx.append(cluster_idx)    # log the cluster has been computed 
+            computed_cluster_idx.append(cluster_idx)            # log the cluster has been computed 
 
         ## find one sample in a cluster which has the minimum sum of distance to all the samples in the cluster
         index = np.argmin(np.sum(pred_matrix, axis=1, keepdims=True), axis=0)
