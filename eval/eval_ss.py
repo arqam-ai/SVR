@@ -12,7 +12,6 @@ from utils.ptcloud_dataset_graph_three_shapes_yefan import image_preprocessing, 
 												transform_mat, cal_pref, get_partition, silhouette
 from utils.utils import check_exist_or_mkdirs
 from utils.loss import ChamfersDistance3
-from model.clustering import compute_ptcloud_dismatrix
 import torch.nn as nn
 import time
 
@@ -42,15 +41,51 @@ def compute_img_dismatrix(X1, X2, distance_metric, title=None, results_dir=None,
     # initialize distance matrix
     D = torch.zeros([N, N])
     # iterate over one group of ptcloud
-    for i in range(N):	
-        for j in range(N):
+    for i in tqdm.tqdm(range(N), total = N, desc = 'image distance matrix'):	
+        for j in range(i+1, N):
             D[i,j] = distance_metric(X1[i].unsqueeze(0), X2[j].unsqueeze(0))
+            D[j,i] = D[i,j]
     if ifsave:
         D = D.cpu().numpy()
         np.save(os.path.join(results_dir,title), D)
         print("saved to " + os.path.join(results_dir, title)) 
     return D
 
+def compute_ptcloud_dismatrix(X1, X2, distance_metric, title=None, results_dir=None, ifsave=False):
+    """return distance matrix between ptcloud X1 ptcloud X2
+    Params:
+    ----------------------------------
+    X1: (N, ptnum,3) torch.tensor
+        point cloud set 1
+    X2: (N, ptnum,3) torch.tensor
+        point cloud set 2
+    distance_metric: func
+        metric to measure the distance of two point cloud
+    ifsave: boolean
+        if to save the distance matrix to disk
+    title: string
+        name of the saved matrix
+    results_dir:string
+        the path to save the distance matrix
+        
+    Returns:
+    ----------------------------------
+    D: (ptnum, ptnum) torch.tensor
+        distance matrix
+    """
+    N = X1.shape[0]
+    # initialize distance matrix
+    D = torch.zeros([N, N])
+    # iterate over one group of ptcloud
+    for i in tqdm.tqdm(range(N), total = N, desc = 'point cloud distance matrix'):	
+        for j in range(i+1, N):
+            D[i,j] = distance_metric(X1[i].unsqueeze(0), X2[j].unsqueeze(0))
+            D[j,i] = D[i,j]
+    if ifsave:
+        D = D.cpu().numpy()
+        np.save(os.path.join(results_dir,title), D)
+        print("saved to " + os.path.join(results_dir, title)) 
+    return D
 
 def main(args):
 
@@ -90,6 +125,7 @@ def main(args):
 	### generate random sample index list 
 	num_of_sample = int(0.1 *  num_of_train_instance)
 	sample_index_list = random.sample(range(num_of_train_instance), num_of_sample)
+	
 	### slice the all set 
 	sample_train_image_set = train_image_set[sample_index_list].to(args.device)
 	sample_train_ptcloud_set = train_ptcloud_set[sample_index_list].to(args.device)
@@ -102,15 +138,11 @@ def main(args):
 								title = '%s_pt_similarity_matrix_%d.npy'% ('train',args.experiment_number), results_dir = args.matrix_save_path, ifsave = True)
 	train_img_matrix = compute_img_dismatrix(X1 = sample_train_image_set, X2 = sample_train_image_set, distance_metric = img_criterion, 
 								title = '%s_img_similarity_matrix_%d.npy'%('train',args.experiment_number), results_dir = args.matrix_save_path, ifsave = True)
-	#print(train_pt_matrix, train_pt_matrix.shape)
-	#print(train_img_matrix, train_img_matrix.shape)
 	
 	## normalize matrix   
 	train_pt_matrix_tr = transform_mat(train_pt_matrix)     # -e^(x/max(x)) then fill the diagonal with 0
 	train_img_matrix_tr = transform_mat(train_img_matrix)
-	#print(train_pt_matrix_tr)
-	#print(train_img_matrix_tr)
-
+	
 	## get partition
 	### point cloud, calculate affinity propagation parameter: preference
 	part_preference = cal_pref(train_pt_matrix_tr)          # in increasing order, float number in first 10% position in this matrix
