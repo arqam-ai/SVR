@@ -93,7 +93,7 @@ def main(args):
 
 	## set up logger
 	logger = logging.getLogger()
-	file_log_handler = logging.FileHandler('Train_%d.log'%(args.experiment_number))
+	file_log_handler = logging.FileHandler('Train_%s.log'%(args.experiment_name))
 	logger.addHandler(file_log_handler)
 	logger.setLevel('INFO')
 	formatter = logging.Formatter()
@@ -148,9 +148,9 @@ def main(args):
 	pt_criterion = ChamfersDistance3().to(args.device)
 	img_criterion = nn.L1Loss(reduction="sum").to(args.device)
 	train_pt_matrix = compute_ptcloud_dismatrix(X1 = sample_train_ptcloud_set, X2 = sample_train_ptcloud_set, distance_metric = pt_criterion, 
-								title = '%s_pt_similarity_matrix_%d.npy'% ('train',args.experiment_number), results_dir = args.matrix_save_path, ifsave = True)
+								title = '%s_pt_similarity_matrix_%s.npy'% ('train',args.experiment_name), results_dir = args.matrix_save_path, ifsave = True)
 	train_img_matrix = compute_img_dismatrix(X1 = sample_train_image_set, X2 = sample_train_image_set, distance_metric = img_criterion, 
-								title = '%s_img_similarity_matrix_%d.npy'%('train',args.experiment_number), results_dir = args.matrix_save_path, ifsave = True)
+								title = '%s_img_similarity_matrix_%s.npy'%('train',args.experiment_name), results_dir = args.matrix_save_path, ifsave = True)
 	
 	## normalize matrix   
 	train_pt_matrix_tr = transform_mat(train_pt_matrix)     # -e^(x/max(x)) then fill the diagonal with 0
@@ -171,8 +171,8 @@ def main(args):
 	img_ss = silhouette(train_img_matrix, train_img_part)
 
 	## report 
-	logger.info('Experiment No.{} point cloud silhouette: '.format(args.experiment_number), pt_ss)
-	logger.info('Experiment No.{} img silhouette: '.format(args.experiment_number), img_ss)
+	logger.info('Experiment No.{} point cloud silhouette: {}'.format(args.experiment_name, pt_ss))
+	logger.info('Experiment No.{} img silhouette: {}'.format(args.experiment_name, img_ss))
 	logger.info('Time:{:3} seconds'.format(time.time() - starter_time))
 
 if __name__ == '__main__':
@@ -198,8 +198,8 @@ if __name__ == '__main__':
 	parser.add_argument("--matrix-save-path",type=str,
 					default="distance_matrix",
 					help=' ' )
-	parser.add_argument("--experiment-number",type=int,
-					default=2,
+	parser.add_argument("--experiment-name",type=str,
+					default= 'trainset3000',
 					help=' ' )
 
 	args = parser.parse_args(sys.argv[1:])
