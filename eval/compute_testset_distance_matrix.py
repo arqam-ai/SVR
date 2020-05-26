@@ -202,16 +202,24 @@ def main(args):
     #                                             title='testset_similarity_matrix_%s.npy' % (
     #                                             args.experiment_name), results_dir=args.matrix_save_path,
     #                                             ifsave=True)
-    train_pt_matrix = Block_compute_ptcloud_dismatrix(X1=train_ptcloud_set, X2=train_ptcloud_set,
-                                                distance_metric=pt_criterion,
-                                                start_index=args.start_index,
-                                                end_index=args.end_index,
-                                                title='testset_similarity_matrix_{}_{}_{}.npy'.format(
-                                                    args.start_index,
-                                                    args.end_index,
-                                                    args.experiment_name),
-                                                results_dir=args.matrix_save_path,
-                                                ifsave=True)
+
+    # train_pt_matrix = Block_compute_ptcloud_dismatrix(X1=train_ptcloud_set, X2=train_ptcloud_set,
+    #                                             distance_metric=pt_criterion,
+    #                                             start_index=args.start_index,
+    #                                             end_index=args.end_index,
+    #                                             title='testset_similarity_matrix_{}_{}_{}.npy'.format(
+    #                                                 args.start_index,
+    #                                                 args.end_index,
+    #                                                 args.experiment_name),
+    #                                             results_dir=args.matrix_save_path,
+    #                                             ifsave=True)
+
+    train_pt_matrix = compute_ptcloud_dismatrix(X1=train_ptcloud_set, X2=train_ptcloud_set,
+                                                      distance_metric=pt_criterion,
+                                                      title='clustering_DM_{}.npy'.format(
+                                                          args.experiment_name),
+                                                      results_dir=args.matrix_save_path,
+                                                      ifsave=True)
 
     # # train_img_matrix = compute_img_dismatrix(X1=sample_train_image_set, X2=sample_train_image_set,
     # #                                          distance_metric=img_criterion,
@@ -219,28 +227,28 @@ def main(args):
     # #                                          results_dir=args.matrix_save_path, ifsave=True)
     #
     # ## normalize matrix
-    # train_pt_matrix_tr = transform_mat(train_pt_matrix)  # -e^(x/max(x)) then fill the diagonal with 0
-    # # train_img_matrix_tr = transform_mat(train_img_matrix)
+    train_pt_matrix_tr = transform_mat(train_pt_matrix)  # -e^(x/max(x)) then fill the diagonal with 0
+    # train_img_matrix_tr = transform_mat(train_img_matrix)
     #
     # ## get partition
-    # ### point cloud, calculate affinity propagation parameter: preference
-    # part_preference = cal_pref(
-    #     train_pt_matrix_tr)  # in increasing order, float number in first 10% position in this matrix
+    ### point cloud, calculate affinity propagation parameter: preference
+    part_preference = cal_pref(
+        train_pt_matrix_tr)  # in increasing order, float number in first 10% position in this matrix
     # ### affinity propagation
-    # train_pt_part = get_partition(train_pt_matrix_tr, preference=part_preference)
+    train_pt_part = get_partition(train_pt_matrix_tr, preference=part_preference)
     # # ### image, calculate affinity propagation parameter: preference
     # # part_preference = cal_pref(train_img_matrix_tr)
     # # ### affinity propagation
     # # train_img_part = get_partition(train_img_matrix_tr, preference=part_preference)
     #
-    # ## silhouette score
-    # pt_ss = silhouette(train_pt_matrix, train_pt_part)
+    ## silhouette score
+    pt_ss = silhouette(train_pt_matrix, train_pt_part)
     # # img_ss = silhouette(train_img_matrix, train_img_part)
     #
     # ## report
-    # logger.info('Experiment No.{} point cloud silhouette: {}'.format(args.experiment_name, pt_ss))
+    logger.info('Experiment No.{} point cloud silhouette: {}'.format(args.experiment_name, pt_ss))
     # # logger.info('Experiment No.{} img silhouette: {}'.format(args.experiment_name, img_ss))
-    logger.info("Start index: {}, end index: {}".format(args.start_index, args.end_index))
+    # logger.info("Start index: {}, end index: {}".format(args.start_index, args.end_index))
     logger.info('Time:{:3} seconds'.format(time.time() - starter_time))
 
 
