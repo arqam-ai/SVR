@@ -151,15 +151,15 @@ def main(args):
 
     check_exist_or_mkdirs(args.matrix_save_path)
     starter_time = time.time()
-    ## LOAD class info
-    train_num, train_class_dic, train_class_list, train_fileid_list = class_counter(data_basedir=args.data_basedir,
-                                                                                    splits_path=args.splits_path,
-                                                                                    class_path=args.class_path,
-                                                                                    split_name='train')
-    class_list = list(train_class_dic.keys())  ## list of class name length = 55
+    # ## LOAD class info
+    # train_num, train_class_dic, train_class_list, train_fileid_list = class_counter(data_basedir=args.data_basedir,
+    #                                                                                 splits_path=args.splits_path,
+    #                                                                                 class_path=args.class_path,
+    #                                                                                 split_name='train')
+    # class_list = list(train_class_dic.keys())  ## list of class name length = 55
 
     ## LOAD train point cloud
-    train_ptcloud_set = np.load(args.ptcloud_path)
+    # train_ptcloud_set = np.load(args.ptcloud_path)
     # train_ptcloud_set = ptcloud['train']
 
     # ## LOAD train image
@@ -181,7 +181,7 @@ def main(args):
 
     ## Convert numpy array to torch tensor
     # train_image_set = torch.from_numpy(train_image_set)
-    train_ptcloud_set = torch.from_numpy(train_ptcloud_set).to(args.device)
+    # train_ptcloud_set = torch.from_numpy(train_ptcloud_set).to(args.device)
 
     # ##randomly sample 10% instances from train set
     # ### generate random sample index list
@@ -191,7 +191,7 @@ def main(args):
     ### slice the all set
     # sample_train_image_set = train_image_set[sample_index_list].to(args.device)
     # sample_train_ptcloud_set = train_ptcloud_set[sample_index_list].to(args.device)
-    logger.info('Number of sampled instances is {}'.format(train_ptcloud_set.shape[0]))
+    # logger.info('Number of sampled instances is {}'.format(train_ptcloud_set.shape[0]))
 
     ## compute distance matrix
     pt_criterion = ChamfersDistance3().to(args.device)
@@ -214,12 +214,33 @@ def main(args):
     #                                             results_dir=args.matrix_save_path,
     #                                             ifsave=True)
 
-    train_pt_matrix = compute_ptcloud_dismatrix(X1=train_ptcloud_set, X2=train_ptcloud_set,
-                                                      distance_metric=pt_criterion,
-                                                      title='clustering_DM_{}.npy'.format(
-                                                          args.experiment_name),
-                                                      results_dir=args.matrix_save_path,
-                                                      ifsave=True)
+    # train_pt_matrix = compute_ptcloud_dismatrix(X1=train_ptcloud_set, X2=train_ptcloud_set,
+    #                                                   distance_metric=pt_criterion,
+    #                                                   title='clustering_DM_{}.npy'.format(
+    #                                                       args.experiment_name),
+    #                                                   results_dir=args.matrix_save_path,
+    #                                                   ifsave=True)
+
+    if args.selection_list is not None:
+        train_ptcloud_set = np.load(args.ptcloud_path)
+        subsample_list = np.load(args.selection_list)
+        subsample_type = args.selection_list.replace(".npy", "").split("_")[0].split("/")[1]
+        start_index = args.selection_list.replace(".npy", "").split("_")[-1]
+        subset_ptc = train_ptcloud_set[subsample_list,:]
+        subset_ptc = torch.from_numpy(subset_ptc).to(args.device)
+        train_pt_matrix = compute_ptcloud_dismatrix(
+            X1=subset_ptc, X2=subset_ptc,
+            distance_metric=pt_criterion,
+            title='distance_matrix_sample_{}__{}_starIndex_{}.npy'.format(
+            subsample_type, len(subsample_list), start_index),
+            results_dir=args.matrix_save_path,
+            ifsave=True)
+    else:
+        #### read GT/Pred complete distance matrix ####
+        train_pt_matrix = np.load(args.distance_matrix)
+        print("Done loading distance matrix: {}".format(train_pt_matrix.shape))
+        #### read GT/Pred complete distance matrix ####
+
 
     # # train_img_matrix = compute_img_dismatrix(X1=sample_train_image_set, X2=sample_train_image_set,
     # #                                          distance_metric=img_criterion,
@@ -281,6 +302,12 @@ if __name__ == '__main__':
                         help=' ')
     parser.add_argument("--end_index", type=int,
                         help=' ')
+    parser.add_argument('--distance_matrix', type=str,
+                        default='',
+                        help='')
+    parser.add_argument('--selection_list', type=str,
+                        default=None,
+                        help='')
 
     args = parser.parse_args(sys.argv[1:])
     args.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
