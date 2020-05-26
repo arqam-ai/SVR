@@ -53,7 +53,7 @@ corresponding sampling index locates at ***eval/faster_ss_data/testset_ptcloud_r
 
 **May 26th**
 
-1. calculate silhouette score of randomly sampled test set ground truth point cloud (Num: 2000)  repeat the experiment for ten times    
+1.  [link ](https://github.com/YefanZhou/ECCV2020_rebuttal/blob/master/eval/faster_eval_ss.py)  calculate silhouette score of randomly sampled test set ground truth point cloud (Num: 2000)  repeat the experiment for ten times,  code
 
 ```bash
 cd eval
@@ -73,9 +73,9 @@ Output:
 
 
 
-1. generate **Clustering Method** prediction distance matrx (10432 x 10432) based on cluster distance matrix.
+1. [link](https://github.com/YefanZhou/ECCV2020_rebuttal/blob/master/eval/compute_prediction.py)  generate **Clustering Method** prediction distance matrx (10432 x 10432) based on cluster distance matrix.
 
-   and calculate silhouette score of  **Clustering Method** prediction distance matrx (10432 x 10432)
+   and calculate silhouette score of  **Clustering Method** prediction distance matrx (10432 x 10432) 
 
 ```bash
 cd eval
