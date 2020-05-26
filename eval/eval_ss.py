@@ -15,7 +15,7 @@ from utils.loss import ChamfersDistance3
 import torch.nn as nn
 import time
 import logging
-os.environ['CUDA_VISIBLE_DEVICES'] = '1'
+os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 
 def compute_img_dismatrix(X1, X2, distance_metric, title=None, results_dir=None, ifsave=False):
 	"""return distance matrix between img set X1 and img set X2
@@ -138,7 +138,7 @@ def main(args):
 	### generate random sample index list 
 	num_of_sample = int(0.1 *  num_of_train_instance)
 	sample_index_list = random.sample(range(num_of_train_instance), num_of_sample)
-	
+	np.save('distance_matrix/sample_index_{}.npy'.format(args.experiment_name), np.array(sample_index_list))
 	### slice the all set 
 	sample_train_image_set = train_image_set[sample_index_list].to(args.device)
 	sample_train_ptcloud_set = train_ptcloud_set[sample_index_list].to(args.device)
@@ -199,7 +199,7 @@ if __name__ == '__main__':
 					default="distance_matrix",
 					help=' ' )
 	parser.add_argument("--experiment-name",type=str,
-					default= 'trainset3000',
+					default= 'trainset3000_1',
 					help=' ' )
 
 	args = parser.parse_args(sys.argv[1:])

@@ -74,11 +74,64 @@ def ptcloud_sampling(test_ptcloud_set, origin_ptnum = 1024, sampled_ptnum = 256)
 
 	return downsampled_ptcloud
 
+def sampling():
+	pass
+######################################################################################################
+	##random sample test set 1000
+#	random_index = np.array(random.sample(range(test_ptcloud_set.shape[0]), 1000), dtype=int)
+#	randsamp_test_ptcloud_set = test_ptcloud_set[random_index]
+#	print(random_index.shape)
+#	print(randsamp_test_ptcloud_set.shape)
+#	np.save('faster_ss_data/testset_ptcloud_random1000_index.npy', random_index)
+#	np.save('faster_ss_data/testset_ptcloud_random1000.npy', randsamp_test_ptcloud_set)
+
+	##random sample test set 2000
+#	random_index = np.array(random.sample(range(test_ptcloud_set.shape[0]), 2000), dtype=int)
+#	randsamp_test_ptcloud_set = test_ptcloud_set[random_index]
+#	print(random_index.shape)
+#	print(randsamp_test_ptcloud_set.shape)
+#	np.save('faster_ss_data/testset_ptcloud_random2000_index.npy', random_index)
+#	np.save('faster_ss_data/testset_ptcloud_random2000.npy', randsamp_test_ptcloud_set)
+
+	## LOAD test point cloud########################################
+#	ptcloud = np.load(args.ptcloud_path)
+#	test_ptcloud_set = ptcloud['test']
+
+	## DOWNSAMPLE test point cloud
+#	downsampled_ptcloud = ptcloud_sampling(test_ptcloud_set)
+	### TEST if downsampled point cloud shape valid
+#	visuaize_pts(downsampled_ptcloud[random.sample(range(10432), 40)], title = 'downsampled to 256 points',
+#				rows = 5, cols = 8)
+#	plt.savefig('../img/test_downsampled_ptcloud_256points.png')
+	### Save this downsampled point cloud
+#	np.save('faster_ss_data/testset_256points.npy', downsampled_ptcloud)
+######################################################################################################
+	'''
+	randomsample1000_index = np.load('faster_ss_data/testset_ptcloud_random1000_index.npy')
+	## LOAD train image
+	split_name = 'test'
+	num_of_train_instance = 10432
+	view = '0'
+	train_image_set = np.zeros((num_of_train_instance, 3, 224, 224))
+	train_sample_idx = 0
+
+	for clname in tqdm.tqdm(class_list,total= len(class_list), desc = '%s img loading...'%split_name):
+		f = open(os.path.join(args.data_basedir, args.splits_path, 'lists', clname, '%s.txt'%split_name),"r")
+		for x in f:
+			instance_id = x[:-1]
+			image = cv2.imread(os.path.join(args.data_basedir, args.img_path, clname, instance_id, '%s.png'%view))
+			image = image_preprocessing(image, imgsize = 224)
+			train_image_set[train_sample_idx] = image
+			train_sample_idx += 1
+
+	assert train_sample_idx  == num_of_train_instance, "Loading image index gets error"
+	'''
+
 def main(args):
 
 	## set up logger
 	logger = logging.getLogger()
-	file_log_handler = logging.FileHandler('Train_%d.log'%(args.experiment_number))
+	file_log_handler = logging.FileHandler('EvalSS_%s.log'%(args.experiment_name))
 	logger.addHandler(file_log_handler)
 	logger.setLevel('INFO')
 	formatter = logging.Formatter()
@@ -94,91 +147,57 @@ def main(args):
 			splits_path = args.splits_path, class_path = args.class_path, split_name ='test')
 	class_list = list(test_class_dic.keys())    			## list of class name length = 55
 
-	##LOAD downsampled point cloud
-#	test_ptcloud_set = np.load('faster_ss_data/testset_256points.npy')
-	random1000_ptcloud_set = np.load('faster_ss_data/testset_ptcloud_random1000.npy')
+	##random sample test set 2000
+	test_ptcloud_set = np.load('faster_ss_data/testset_256points.npy')
+
+	for order in range(1, 11):
+		random_index = np.array(random.sample(range(test_ptcloud_set.shape[0]), 2000), dtype=int)
+		randsamp_test_ptcloud_set = test_ptcloud_set[random_index]
+		logger.info("sampled index shape: {}".format(random_index.shape))
+		logger.info("sample point cloud shape: {}".format(randsamp_test_ptcloud_set.shape))
+		np.save("faster_ss_data/testset_ptcloud_random2000_index_{}.npy".format(order), random_index)
+		np.save("faster_ss_data/testset_ptcloud_random2000_{}.npy".format(order), randsamp_test_ptcloud_set)
+
+		random2000_ptcloud_set = randsamp_test_ptcloud_set
+#		random2000_ptcloud_set = np.load('faster_ss_data/testset_ptcloud_random2000.npy')
+		
+		## Convert numpy array to torch tensor
+	#	train_image_set = torch.from_numpy(train_image_set)
+		random2000_ptcloud_set = torch.from_numpy(random2000_ptcloud_set)
+		
+		random2000_ptcloud_set = random2000_ptcloud_set.to(args.device)
+	#	sample_train_image_set = train_image_set[train_sample_index].to(args.device)
+		## compute distance matrix 
+		pt_criterion = ChamfersDistance3().to(args.device)
+	#	img_criterion = nn.L1Loss(reduction="sum").to(args.device)
+		train_pt_matrix = compute_ptcloud_dismatrix(X1 = random2000_ptcloud_set, X2 = random2000_ptcloud_set, distance_metric = pt_criterion, 
+									title = '%s_pt_similarity_matrix_%s_%d.npy'% ('train', args.experiment_name, order), results_dir = args.matrix_save_path, ifsave = True)
+	#	train_img_matrix = compute_img_dismatrix(X1 = sample_train_image_set, X2 = sample_train_image_set, distance_metric = img_criterion, 
+	#								title = '%s_img_similarity_matrix_%s.npy'%('train',args.experiment_name), results_dir = args.matrix_save_path, ifsave = True)
+		
+		## normalize matrix   
+		train_pt_matrix_tr = transform_mat(train_pt_matrix)     # -e^(x/max(x)) then fill the diagonal with 0
+	#	train_img_matrix_tr = transform_mat(train_img_matrix)
+		
+		## get partition
+		### point cloud, calculate affinity propagation parameter: preference
+		part_preference = cal_pref(train_pt_matrix_tr)          # in increasing order, float number in first 10% position in this matrix
+		### affinity propagation
+		train_pt_part = get_partition(train_pt_matrix_tr, preference = part_preference)
+		### image, calculate affinity propagation parameter: preference
+	#	part_preference = cal_pref(train_img_matrix_tr)
+		### affinity propagation
+	#	train_img_part = get_partition(train_img_matrix_tr, preference = part_preference)
+
+		## silhouette score
+		pt_ss = silhouette(train_pt_matrix, train_pt_part)
+	#	img_ss = silhouette(train_img_matrix, train_img_part)
+
+		## report 
+		logger.info('Experiment No.{} point cloud silhouette: {}'.format(order, pt_ss))
+	#	logger.info('Experiment No.{} img silhouette: {}'.format(args.experiment_name, img_ss))
+		logger.info('Time:{:3} seconds'.format(time.time() - starter_time))
 	
-######################################################################################################
-	##random sample test set 1000
-#	random_index = np.array(random.sample(range(test_ptcloud_set.shape[0]), 1000), dtype=int)
-#	randsamp_test_ptcloud_set = test_ptcloud_set[random_index]
-#	print(random_index.shape)
-#	print(randsamp_test_ptcloud_set.shape)
-#	np.save('faster_ss_data/testset_ptcloud_random1000_index.npy', random_index)
-#	np.save('faster_ss_data/testset_ptcloud_random1000.npy', randsamp_test_ptcloud_set)
-
-	## LOAD test point cloud########################################
-#	ptcloud = np.load(args.ptcloud_path)
-#	test_ptcloud_set = ptcloud['test']
-
-	## DOWNSAMPLE test point cloud
-#	downsampled_ptcloud = ptcloud_sampling(test_ptcloud_set)
-	### TEST if downsampled point cloud shape valid
-#	visuaize_pts(downsampled_ptcloud[random.sample(range(10432), 40)], title = 'downsampled to 256 points',
-#				rows = 5, cols = 8)
-#	plt.savefig('../img/test_downsampled_ptcloud_256points.png')
-	### Save this downsampled point cloud
-#	np.save('faster_ss_data/testset_256points.npy', downsampled_ptcloud)
-######################################################################################################
-
-
-	train_ptcloud_set = random1000_ptcloud_set
-	train_sample_index = np.load('faster_ss_data/testset_ptcloud_random1000_index.npy')
-	## LOAD train image
-	split_name = 'test'
-	num_of_train_instance = 10432
-	view = '0'
-	train_image_set = np.zeros((num_of_train_instance, 3, 224, 224))
-	train_sample_idx = 0
-	for clname in tqdm.tqdm(class_list,total= len(class_list), desc = '%s img loading...'%split_name):
-		f = open(os.path.join(args.data_basedir, args.splits_path, 'lists', clname, '%s.txt'%split_name),"r")
-		for x in f:
-			instance_id = x[:-1]
-			image = cv2.imread(os.path.join(args.data_basedir, args.img_path, clname, instance_id, '%s.png'%view))
-			image = image_preprocessing(image, imgsize = 224)
-			train_image_set[train_sample_idx] = image
-			train_sample_idx += 1
-	
-	assert train_sample_idx  == num_of_train_instance, "Loading image index gets error"
-
-	## Convert numpy array to torch tensor
-	train_image_set = torch.from_numpy(train_image_set)
-	train_ptcloud_set = torch.from_numpy(train_ptcloud_set)
-	
-
-	sample_train_ptcloud_set = train_ptcloud_set.to(args.device)
-	sample_train_image_set = train_image_set[train_sample_index].to(args.device)
-	## compute distance matrix 
-	pt_criterion = ChamfersDistance3().to(args.device)
-	img_criterion = nn.L1Loss(reduction="sum").to(args.device)
-	train_pt_matrix = compute_ptcloud_dismatrix(X1 = sample_train_ptcloud_set, X2 = sample_train_ptcloud_set, distance_metric = pt_criterion, 
-								title = '%s_pt_similarity_matrix_%d.npy'% ('train',args.experiment_number), results_dir = args.matrix_save_path, ifsave = True)
-	train_img_matrix = compute_img_dismatrix(X1 = sample_train_image_set, X2 = sample_train_image_set, distance_metric = img_criterion, 
-								title = '%s_img_similarity_matrix_%s.npy'%('train',args.experiment_number), results_dir = args.matrix_save_path, ifsave = True)
-	
-	## normalize matrix   
-	train_pt_matrix_tr = transform_mat(train_pt_matrix)     # -e^(x/max(x)) then fill the diagonal with 0
-	train_img_matrix_tr = transform_mat(train_img_matrix)
-	
-	## get partition
-	### point cloud, calculate affinity propagation parameter: preference
-	part_preference = cal_pref(train_pt_matrix_tr)          # in increasing order, float number in first 10% position in this matrix
-	### affinity propagation
-	train_pt_part = get_partition(train_pt_matrix_tr, preference = part_preference)
-	### image, calculate affinity propagation parameter: preference
-	part_preference = cal_pref(train_img_matrix_tr)
-	### affinity propagation
-	train_img_part = get_partition(train_img_matrix_tr, preference = part_preference)
-
-	## silhouette score
-	pt_ss = silhouette(train_pt_matrix, train_pt_part)
-	img_ss = silhouette(train_img_matrix, train_img_part)
-
-	## report 
-	logger.info('Experiment No.{} point cloud silhouette: {}'.format(args.experiment_number, pt_ss))
-	logger.info('Experiment No.{} img silhouette: {}'.format(args.experiment_number, img_ss))
-	logger.info('Time:{:3} seconds'.format(time.time() - starter_time))
-
 
 if __name__ == '__main__':
 
@@ -203,8 +222,8 @@ if __name__ == '__main__':
 	parser.add_argument("--matrix-save-path",type=str,
 					default="distance_matrix",
 					help=' ' )
-	parser.add_argument("--experiment-number",type=int,
-					default=1,
+	parser.add_argument("--experiment-name",type=str,
+					default='pt_random_2000_tentimes',
 					help=' ' )
 
 	args = parser.parse_args(sys.argv[1:])

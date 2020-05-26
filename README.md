@@ -48,3 +48,44 @@ corresponding sampling index locates at  ***eval/faster_ss_data/testset_256point
 random sample the faster dataset to 1000 instances:  ***eval/faster_ss_data/testset_ptcloud_random1000.npy***  shape = (1000, 256, 3)
 
 corresponding sampling index locates at ***eval/faster_ss_data/testset_ptcloud_random1000_index.npy***    
+
+------
+
+**May 26th**
+
+1. calculate silhouette score of randomly sampled test set ground truth point cloud (Num: 2000)  repeat the experiment for ten times    
+
+```bash
+cd eval
+python faster_eval_ss.py
+Output:
+  Experiment No.1 point cloud silhouette: 0.06785896420478821
+  Time:506.22960805892944 seconds
+  Experiment No.2 point cloud silhouette: 0.07321267575025558
+  Time:1009.3026542663574 seconds
+  Experiment No.3 point cloud silhouette: 0.07592274248600006
+  Time:1512.7354078292847 seconds
+  Experiment No.4 point cloud silhouette: 0.07296927273273468
+  Time:2020.5051062107086 seconds
+  Experiment No.5 point cloud silhouette: 0.07694291323423386
+  Time:2528.785288333893 seconds
+```
+
+
+
+1. generate **Clustering Method** prediction distance matrx (10432 x 10432) based on cluster distance matrix.
+
+   and calculate silhouette score of  **Clustering Method** prediction distance matrx (10432 x 10432)
+
+```bash
+cd eval
+python compute_prediction.py 
+Output:
+  normalize done Time : 0.995206 seconds
+  paritition done Time : 245.385602 seconds
+  silhouette done Time : 246.303075 seconds
+  silhouette_score is 0.651192
+```
+
+
+
