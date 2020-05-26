@@ -44,6 +44,7 @@ def nearest_selection(distance_matrix, num_samples, start_index):
 
     return seen, nearest_distance
 
+
 def visualize_selection(ptc, selection_list, nearest_distance, num_to_vis=100):
     fig = plt.figure(figsize=(10, 10))
     for i in range(num_to_vis):
