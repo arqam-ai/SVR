@@ -69,6 +69,16 @@ Output:
   Time:2020.5051062107086 seconds
   Experiment No.5 point cloud silhouette: 0.07694291323423386
   Time:2528.785288333893 seconds
+  Experiment No.6 point cloud silhouette: 0.06453316658735275
+  Time:3035.0339250564575 seconds
+  Experiment No.7 point cloud silhouette: 0.07341325283050537
+  Time:3538.3120381832123 seconds
+  Experiment No.8 point cloud silhouette: 0.0679931789636612
+  Time:4040.571636199951 seconds
+  Experiment No.9 point cloud silhouette: 0.0679311752319336
+  Time:4544.851239442825 seconds
+  Experiment No.10 point cloud silhouette: 0.07102470844984055
+  Time:5050.380216360092 seconds
 ```
 
 
