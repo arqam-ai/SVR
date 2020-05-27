@@ -323,6 +323,7 @@ def main():
     ## Loop over ten experiments 
     logger.info('Experiment Type: {}'.format(subsample_type))
     for step in range(10):
+        
         if subsample_type == "FPS":
             selection_list = farthest_selection_yefan(distance_matrix= np.copy(distance_matrix), num_samples=num_samples, 
                                                                                        total_num = 10432)

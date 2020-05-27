@@ -148,6 +148,7 @@ subsample_type = "NPS"
 python subsample_selection_yefan.py
 Output:
 	experiment 0: silhouette score is 0.12091750957806079
+	experiment 1: silhouette score is 0.12097931233345019
 ```
 
 ​	score reported to ***eval/NPS_2000_ss.log***
