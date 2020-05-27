@@ -97,5 +97,59 @@ Output:
   silhouette_score is 0.651192
 ```
 
+------
 
+**May 27th**
 
+1. Farthest Point Sampling sample 2000 instances and then calculate silhouette score
+
+   FPS implementation [reference](https://flothesof.github.io/farthest-neighbors.html) 
+
+   **To run the script:** 
+
+```bash
+cd eval
+```
+
+modify ***subsample_selection_yefan.py***  line 298 as 
+
+```python
+subsample_type = "FPS"
+```
+
+```bash
+python subsample_selection_yefan.py
+Output:
+	experiment 0: silhouette score is 0.026271342397641534
+	experiment 11: silhouette score is 0.03208045590965395
+	experiment 12: silhouette score is 0.030714486373260515
+	experiment 13: silhouette score is 0.03235828537526648
+```
+
+​	score reported to ***eval/FPS_2000_ss.log***
+
+​	FPS sample index saved to ***eval/subsample/FPS/***  
+
+2. Nearest Neighbor sampling 2000 instances and then calculate silhouette score
+
+   **To run the script:** 
+
+```
+cd eval
+```
+
+modify ***subsample_selection_yefan.py***  line 298 as 
+
+```python
+subsample_type = "NPS"
+```
+
+```
+python subsample_selection_yefan.py
+Output:
+	experiment 0: silhouette score is 0.12091750957806079
+```
+
+​	score reported to ***eval/NPS_2000_ss.log***
+
+​	NPS sample index saved to ***eval/subsample/NPS/***  
