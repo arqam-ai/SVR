@@ -121,6 +121,8 @@ subsample_type = "FPS"
 python subsample_selection_yefan.py
 Output:
 	experiment 0: silhouette score is 0.026271342397641534
+	experiment 1: silhouette score is 0.02909122411897761
+	experiment 2: silhouette score is 0.030073164741396256
 	experiment 11: silhouette score is 0.03208045590965395
 	experiment 12: silhouette score is 0.030714486373260515
 	experiment 13: silhouette score is 0.03235828537526648
@@ -149,6 +151,7 @@ python subsample_selection_yefan.py
 Output:
 	experiment 0: silhouette score is 0.12091750957806079
 	experiment 1: silhouette score is 0.12097931233345019
+	experiment 2: silhouette score is 0.1451042807407922
 ```
 
 ​	score reported to ***eval/NPS_2000_ss.log***
