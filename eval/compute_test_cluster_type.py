@@ -163,6 +163,7 @@ def main(args):
                                                                                     splits_path=args.splits_path,
                                                                                     class_path=args.class_path,
                                                                                     split_name='train')
+                                                                                    
     ## LOAD point cloud
     ptcloud = np.load(args.ptcloud_path)
     train_set = ptcloud['train']

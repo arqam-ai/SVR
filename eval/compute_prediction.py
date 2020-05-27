@@ -1,3 +1,8 @@
+'''
+    this is script used to measure SScore on Clustering method matrix
+
+    Author: yefan
+'''
 import os
 import sys
 sys.path.append("../")
@@ -63,7 +68,7 @@ def silhouette_score(distance_matrix):
 def main():
     ## LOAD list of cluster index assignment for inferred results
     cluster_assignment = load_prediction('../what3d_clusters/predictions.txt')
-    ## LOAD distance matrix between cluster mean shape
+    ## LOAD distance matrix of cluster mean shape
     cluster_dismatrix = np.load('clustering_baseline/clustering_DM_trainsetAll.npy')
     ## generate prediction distance matrix based on cluster distance matrix
     pred_dismatrix = generate_cluster_prediction(cluster_dismatrix = cluster_dismatrix, cluster_assignment = cluster_assignment,

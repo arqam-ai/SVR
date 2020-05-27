@@ -147,55 +147,45 @@ def main(args):
 			splits_path = args.splits_path, class_path = args.class_path, split_name ='test')
 	class_list = list(test_class_dic.keys())    			## list of class name length = 55
 
-	##random sample test set 2000
+	## LOAD test set data
 	test_ptcloud_set = np.load('faster_ss_data/testset_256points.npy')
-
+	## loop over TEN times experiment
 	for order in range(1, 11):
+		## random sample index 
 		random_index = np.array(random.sample(range(test_ptcloud_set.shape[0]), 2000), dtype=int)
+		## slicing 
 		randsamp_test_ptcloud_set = test_ptcloud_set[random_index]
+		## Save sample index and sampled data 
 		logger.info("sampled index shape: {}".format(random_index.shape))
 		logger.info("sample point cloud shape: {}".format(randsamp_test_ptcloud_set.shape))
 		np.save("faster_ss_data/testset_ptcloud_random2000_index_{}.npy".format(order), random_index)
 		np.save("faster_ss_data/testset_ptcloud_random2000_{}.npy".format(order), randsamp_test_ptcloud_set)
 
 		random2000_ptcloud_set = randsamp_test_ptcloud_set
-#		random2000_ptcloud_set = np.load('faster_ss_data/testset_ptcloud_random2000.npy')
-		
 		## Convert numpy array to torch tensor
-	#	train_image_set = torch.from_numpy(train_image_set)
 		random2000_ptcloud_set = torch.from_numpy(random2000_ptcloud_set)
-		
 		random2000_ptcloud_set = random2000_ptcloud_set.to(args.device)
-	#	sample_train_image_set = train_image_set[train_sample_index].to(args.device)
+
 		## compute distance matrix 
 		pt_criterion = ChamfersDistance3().to(args.device)
-	#	img_criterion = nn.L1Loss(reduction="sum").to(args.device)
+
 		train_pt_matrix = compute_ptcloud_dismatrix(X1 = random2000_ptcloud_set, X2 = random2000_ptcloud_set, distance_metric = pt_criterion, 
-									title = '%s_pt_similarity_matrix_%s_%d.npy'% ('train', args.experiment_name, order), results_dir = args.matrix_save_path, ifsave = True)
-	#	train_img_matrix = compute_img_dismatrix(X1 = sample_train_image_set, X2 = sample_train_image_set, distance_metric = img_criterion, 
-	#								title = '%s_img_similarity_matrix_%s.npy'%('train',args.experiment_name), results_dir = args.matrix_save_path, ifsave = True)
-		
+									title = '%s_pt_similarity_matrix_%s_%d.npy' % ('train', args.experiment_name, order), results_dir = args.matrix_save_path, ifsave = True)
+
 		## normalize matrix   
-		train_pt_matrix_tr = transform_mat(train_pt_matrix)     # -e^(x/max(x)) then fill the diagonal with 0
-	#	train_img_matrix_tr = transform_mat(train_img_matrix)
-		
+		train_pt_matrix_tr = transform_mat(train_pt_matrix)     				# -e^(x/max(x)) then fill the diagonal with 0
+
 		## get partition
 		### point cloud, calculate affinity propagation parameter: preference
-		part_preference = cal_pref(train_pt_matrix_tr)          # in increasing order, float number in first 10% position in this matrix
+		part_preference = cal_pref(train_pt_matrix_tr)          				# in increasing order, float number in first 10% position in this matrix
 		### affinity propagation
 		train_pt_part = get_partition(train_pt_matrix_tr, preference = part_preference)
-		### image, calculate affinity propagation parameter: preference
-	#	part_preference = cal_pref(train_img_matrix_tr)
-		### affinity propagation
-	#	train_img_part = get_partition(train_img_matrix_tr, preference = part_preference)
 
 		## silhouette score
 		pt_ss = silhouette(train_pt_matrix, train_pt_part)
-	#	img_ss = silhouette(train_img_matrix, train_img_part)
-
+		
 		## report 
 		logger.info('Experiment No.{} point cloud silhouette: {}'.format(order, pt_ss))
-	#	logger.info('Experiment No.{} img silhouette: {}'.format(args.experiment_name, img_ss))
 		logger.info('Time:{:3} seconds'.format(time.time() - starter_time))
 	
 
