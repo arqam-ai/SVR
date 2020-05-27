@@ -123,6 +123,14 @@ Output:
 	experiment 0: silhouette score is 0.026271342397641534
 	experiment 1: silhouette score is 0.02909122411897761
 	experiment 2: silhouette score is 0.030073164741396256
+	experiment 3:	silhouette score is 0.03144089126967461
+	experiment 4:	silhouette score is 0.030208127555481978
+	experiment 5:	silhouette score is 0.03052257512138443
+	experiment 6:	silhouette score is 0.03137842279931367
+	experiment 7:	silhouette score is 0.029924382868069307
+	experiment 8:	silhouette score is 0.02954450746237369
+	experiment 9:	silhouette score is 0.028817137118555904
+	
 	experiment 11: silhouette score is 0.03208045590965395
 	experiment 12: silhouette score is 0.030714486373260515
 	experiment 13: silhouette score is 0.03235828537526648
@@ -146,12 +154,19 @@ modify ***subsample_selection_yefan.py***  line 298 as
 subsample_type = "NPS"
 ```
 
-```
+```bash
 python subsample_selection_yefan.py
 Output:
 	experiment 0: silhouette score is 0.12091750957806079
 	experiment 1: silhouette score is 0.12097931233345019
 	experiment 2: silhouette score is 0.1451042807407922
+	experiment 3: silhouette score is 0.12605981513071832
+	experiment 4: silhouette score is 0.14594201979484606
+	experiment 5: silhouette score is 0.12109978570945026
+	experiment 6: silhouette score is 0.12079178273729868
+	experiment 7: silhouette score is 0.13148367625058213
+	experiment 8: silhouette score is 0.11866163314265958
+	experiment 9: silhouette score is 0.1209330393796381
 ```
 
 ​	score reported to ***eval/NPS_2000_ss.log***
