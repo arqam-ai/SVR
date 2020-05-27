@@ -7,7 +7,8 @@
 
 ------
 
-  **May 24th**:   
+#####   **May 24th**:   
+
   Implemented the Clustering method based on the cluster assignment given by What3D author  
   To run the script, place the *What3D* folder What3D outside of *ECCV2020_rebuttal*  
 
@@ -22,7 +23,7 @@
 
 ------
 
-**May 25th:**
+##### **May 25th:**
 
 Implemented the calculation of silhouette score on What3D train set 
 
@@ -51,7 +52,7 @@ corresponding sampling index locates at ***eval/faster_ss_data/testset_ptcloud_r
 
 ------
 
-**May 26th**
+##### **May 26th**
 
 1.  [link ](https://github.com/YefanZhou/ECCV2020_rebuttal/blob/master/eval/faster_eval_ss.py)  calculate silhouette score of randomly sampled test set ground truth point cloud (Num: 2000)  repeat the experiment for ten times,  code
 
@@ -99,11 +100,11 @@ Output:
 
 ------
 
-**May 27th**
+##### **May 27th**
 
 1. Farthest Point Sampling sample 2000 instances and then calculate silhouette score
 
-   FPS implementation [reference](https://flothesof.github.io/farthest-neighbors.html) 
+   [FPS implementation](https://github.com/YefanZhou/ECCV2020_rebuttal/blob/759377ef500955409bf8237d4782df0ef700fa90/eval/subsample_selection_yefan.py#L170) [reference](https://flothesof.github.io/farthest-neighbors.html) 
 
    **To run the script:** 
 
@@ -140,7 +141,9 @@ Output:
 
 ​	FPS sample index saved to ***eval/subsample/FPS/***  
 
-2. Nearest Neighbor sampling 2000 instances and then calculate silhouette score
+2. Nearest Neighbor sampling 2000 instances and then calculate silhouette score 
+
+   [Implementation](https://github.com/YefanZhou/ECCV2020_rebuttal/blob/759377ef500955409bf8237d4782df0ef700fa90/eval/subsample_selection_yefan.py#L207)
 
    **To run the script:** 
 
