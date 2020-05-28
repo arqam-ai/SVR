@@ -189,8 +189,8 @@ def farthest_selection_yefan(distance_matrix,  num_samples , total_num):
     ## randomly select a start point 
     solution_set.append(remaining_points.pop(\
                             random.randint(0, len(remaining_points)-1)))   # random.randint return random integer N (a <= N <= b)
-    
-    for _ in range(num_samples-1):
+    print('enter')
+    for _ in tqdm.tqdm(range(num_samples-1), total=num_samples-1):
         ## initialize an empty matrix to hold distance (rows = solution_set  cols = remaining_points) 
         distances = np.zeros((len(solution_set), len(remaining_points)))
         ## loop through every appended solution
@@ -242,6 +242,51 @@ def nearest_selection_yefan(distance_matrix,  num_samples , total_num):
         solution_set.append(remaining_points.pop(np.argmin(mindis_in_solution)))
     return solution_set
 
+def nearest_selection_fps500(distance_matrix,  num_samples , total_num, cluster_num = 500):
+    """search nearest points set in test set
+    Params:
+    ------------------
+    distance_matrix : (N, N) numpy array
+        distance matrix between all the instances
+    num_samples : int
+        number of sample desired
+    total_num : int
+        total number of remaining solution set 
+    cluster_num: int
+        number of cluster need to be searched by fps
+    Returns:
+    ------------------
+    solution_set : list
+        sampled index based on algorithm
+    """
+    ## number of instance around cluster i.e. 4
+    num_around_cluster = int(num_samples/cluster_num)
+    ## initiaize solution set 
+    solution_set = [] 
+    ## use Farthest Point Sampling to sample cluster 
+    cluster_list = farthest_selection_yefan(distance_matrix, num_samples = cluster_num, total_num = total_num)
+    ## check if cluster index overlap
+    assert len(set(cluster_list)) == cluster_num, 'cluster index overlap detected'
+    ## loop over all cluster index
+    for cluster in cluster_list:
+        length_of_solution = len(solution_set)
+        ## sort the distance vector
+        ordered_index = distance_matrix[cluster].argsort()
+        ## start from first nearest neighbor, if i = 0 then start from itself
+        i = 1
+        while True:
+            ## if specific number of instance sampled around cluster, stop
+            if len(solution_set) >= length_of_solution + num_around_cluster:
+                break
+            ## retrieve a neighbor index
+            index = ordered_index[i]
+            i = i + 1
+            ## check if candidate already in solution set 
+            if index not in solution_set:
+                solution_set.append(index)
+    ## check solution set overlap
+    assert len(set(solution_set)) == num_samples
+    return solution_set
 
 def visualize_selection(ptc, selection_list, filename, num_to_vis=100):
     fig = plt.figure(figsize=(10, 10))
@@ -295,11 +340,12 @@ def dismatrix_sample(matrix, indexlist):
 
 def main():
     ## DEFINE sample type
-    subsample_type = "NPS"
+    subsample_type = "NPS_500"
     ## DEFINE sample number 
     num_samples = 2000
-
+    
     ## set up logger
+    '''
     logger = logging.getLogger()
     file_log_handler = logging.FileHandler('{}_{}_ss.log'.format(subsample_type, num_samples))
     logger.addHandler(file_log_handler)
@@ -309,7 +355,7 @@ def main():
     stderr_log_handler = logging.StreamHandler(sys.stdout)
     logger.addHandler(stderr_log_handler)
     stderr_log_handler.setFormatter(formatter)
-
+    '''
     ## LOAD distance matrix
     distance_matrix = np.load("distance_matrix/GT_all_distance_matrix.npy")
     ## MAKE folder
@@ -321,7 +367,7 @@ def main():
         os.mkdir(dst_folder)
 
     ## Loop over ten experiments 
-    logger.info('Experiment Type: {}'.format(subsample_type))
+#    logger.info('Experiment Type: {}'.format(subsample_type))
     for step in range(10):
         
         if subsample_type == "FPS":
@@ -333,11 +379,16 @@ def main():
         elif subsample_type == "random":
             selection_list = random.sample(range(10432), num_samples)
         
-        ## generate distance matrix based on total dataset distance matrix 
+        elif subsample_type == "NPS_500":
+            selection_list = nearest_selection_fps500(distance_matrix= np.copy(distance_matrix),num_samples=num_samples, 
+                                                                                        total_num = 10432, cluster_num = 500)
+        
+        ## generate distance cmatrix based on total dataset distance matrix 
         sampled_matrix = dismatrix_sample(distance_matrix, selection_list)
+        print('Sumple type {}, sample number {}, Sscore is {}'.format(subsample_type, num_samples, silhouette_score(sampled_matrix)))
         ## save the sampling index as npy file
-        np.save(os.path.join(dst_folder, '{}_{}_index_{}.npy'.format(subsample_type, num_samples, step)), np.array(selection_list))
-        logger.info('{} silhouette score is {}'.format(subsample_type, silhouette_score(sampled_matrix)))
-
+#        np.save(os.path.join(dst_folder, '{}_{}_index_{}.npy'.format(subsample_type, num_samples, step)), np.array(selection_list))
+#        logger.info('{} silhouette score is {}'.format(subsample_type, silhouette_score(sampled_matrix)))
+        
 if __name__ == "__main__":
     main()

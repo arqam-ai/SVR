@@ -175,3 +175,27 @@ Output:
 ​	score reported to ***eval/NPS_2000_ss.log***
 
 ​	NPS sample index saved to ***eval/subsample/NPS/***  
+
+##### **May 28th**
+
+1. sample GT/Clustering method/Autoprediction from 10432 to 2000 
+
+   the sample index in saved to ***eval/subsample/downsample_all***   file ***name random_2000_index_exp_{}.npy*** index from 0 ~ 9
+
+   results : SScore are saved to [table](https://docs.google.com/spreadsheets/d/1f9TXRBMoYlkFO8grtUaFqnt_FG3xRHnXsuo9op5dk30/edit#gid=0) 
+
+```bash
+cd eval
+python compute_prediction.py
+```
+
+2. modify NPS in May 27th,  use FPS to sample 500 cluster, and sample 4 nearest neighbor around the cluster
+
+   results : SScore are saved to [table](https://docs.google.com/spreadsheets/d/1f9TXRBMoYlkFO8grtUaFqnt_FG3xRHnXsuo9op5dk30/edit#gid=0) 
+
+```bash
+cd eval
+python subsample_selection_yefan.py
+```
+
+​	 
