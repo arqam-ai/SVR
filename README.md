@@ -184,6 +184,8 @@ Output:
 
    results : SScore are saved to [table](https://docs.google.com/spreadsheets/d/1f9TXRBMoYlkFO8grtUaFqnt_FG3xRHnXsuo9op5dk30/edit#gid=0) 
 
+   implementation: [pipline](https://github.com/YefanZhou/ECCV2020_rebuttal/blob/3ba1f0e2ade992a03928a03e293f0bb1ab4818b1/eval/compute_prediction.py#L101)
+
 ```bash
 cd eval
 python compute_prediction.py
@@ -192,6 +194,8 @@ python compute_prediction.py
 2. modify NPS in May 27th,  use FPS to sample 500 cluster, and sample 4 nearest neighbor around the cluster
 
    results : SScore are saved to [table](https://docs.google.com/spreadsheets/d/1f9TXRBMoYlkFO8grtUaFqnt_FG3xRHnXsuo9op5dk30/edit#gid=0) 
+
+   implementation: [function](https://github.com/YefanZhou/ECCV2020_rebuttal/blob/3ba1f0e2ade992a03928a03e293f0bb1ab4818b1/eval/subsample_selection_yefan.py#L245)
 
 ```bash
 cd eval
