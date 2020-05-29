@@ -340,9 +340,9 @@ def dismatrix_sample(matrix, indexlist):
 
 def main():
     ## DEFINE sample type
-    subsample_type = "NPS_500"
+    subsample_type = "FPS"
     ## DEFINE sample number 
-    num_samples = 2000
+    num_samples = 3000
     
     ## set up logger
     '''
@@ -368,6 +368,7 @@ def main():
 
     ## Loop over ten experiments 
 #    logger.info('Experiment Type: {}'.format(subsample_type))
+    sum_ss = 0
     for step in range(10):
         
         if subsample_type == "FPS":
@@ -385,10 +386,12 @@ def main():
         
         ## generate distance cmatrix based on total dataset distance matrix 
         sampled_matrix = dismatrix_sample(distance_matrix, selection_list)
-        print('Sumple type {}, sample number {}, Sscore is {}'.format(subsample_type, num_samples, silhouette_score(sampled_matrix)))
+        one_ss = silhouette_score(sampled_matrix)
+        sum_ss += one_ss
+        print('Sumple type {}, sample number {}, Sscore is {}'.format(subsample_type, num_samples, one_ss))
         ## save the sampling index as npy file
-#        np.save(os.path.join(dst_folder, '{}_{}_index_{}.npy'.format(subsample_type, num_samples, step)), np.array(selection_list))
+        np.save(os.path.join(dst_folder, '{}_samplenum_{}_index_{}.npy'.format(subsample_type, num_samples, step)), np.array(selection_list))
 #        logger.info('{} silhouette score is {}'.format(subsample_type, silhouette_score(sampled_matrix)))
-        
+    print('Sumple type {}, sample number {}, Mean Sscore is {}'.format(subsample_type, num_samples, sum_ss/10))
 if __name__ == "__main__":
     main()

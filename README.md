@@ -202,4 +202,16 @@ cd eval
 python subsample_selection_yefan.py
 ```
 
-​	 
+
+
+##### May 29th
+
+1. modify NPS sampling number, use 400 ( 20 x 20 ) sampling as final score reported in rebuttal
+
+   the sampling index is saved to 
+
+   ***subsample/NPS_500/NPS_500_samplenum_400_index_{}.npy***
+
+   ***subsample/FPS/FPS_samplenum_400_index_{}.npy***
+
+   ***subsample/random/random_samplenum_400_index_{}.npy***
