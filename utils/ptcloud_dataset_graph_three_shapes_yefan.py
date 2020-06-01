@@ -430,10 +430,10 @@ def get_partition(matrix):
     return partition
 '''
 
-def get_partition(matrix, preference):
+def get_partition(matrix, preference, damping=0.75):
 
 
-    cl = AffinityPropagation(damping=0.75, affinity='precomputed',preference = preference)
+    cl = AffinityPropagation(damping=damping, affinity='precomputed',preference = preference)
     
 
     cl.fit(matrix)

@@ -183,6 +183,7 @@ def main(args):
     total_cluster_counts = {}
 
     ## Prediction Pipeline
+    test_cluster_data_index = defaultdict(list)
     test_cluster_type = defaultdict(list)
     for idx in tqdm.tqdm(range(test_set.shape[0]), desc='Predicting in clustering method'):
         class_type = test_fileid_list[idx].split("/")[0]
@@ -190,6 +191,11 @@ def main(args):
         # trainset_idx = cluster_dic[cluster_idx]  # list of idx train set 0 ~ 36757
         # pred_cluster = train_set[trainset_idx]  # all the samples of the corresponding cluster
         test_cluster_type[cluster_idx].append(class_type)
+        test_cluster_data_index[cluster_idx].append(idx)
+
+    with open("clustering_data_index.pkl", "wb") as f:
+        pickle.dump(test_cluster_data_index, f)
+
 
     for idx, cluster_typ in enumerate(test_cluster_type):
         # print("Cluster {} .............................................".format(idx))
