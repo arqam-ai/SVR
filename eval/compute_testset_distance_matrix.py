@@ -164,118 +164,104 @@ def main(args):
     # class_list = list(train_class_dic.keys())  ## list of class name length = 55
 
     ## LOAD train point cloud
-    # train_ptcloud_set = np.load(args.ptcloud_path)
-    # train_ptcloud_set = ptcloud['train']
-
-    # ## LOAD train image
-    # split_name = 'train'
-    # num_of_train_instance = train_ptcloud_set.shape[0]
-    # view = '0'
-    # train_image_set = np.zeros((num_of_train_instance, 3, 224, 224))
-    # train_sample_idx = 0
-    # for clname in tqdm.tqdm(class_list, total=len(class_list), desc='%s img loading...' % split_name):
-    #     f = open(os.path.join(args.data_basedir, args.splits_path, 'lists', clname, '%s.txt' % split_name), "r")
-    #     for x in f:
-    #         instance_id = x[:-1]
-    #         image = cv2.imread(os.path.join(args.data_basedir, args.img_path, clname, instance_id, '%s.png' % view))
-    #         image = image_preprocessing(image, imgsize=224)
-    #         train_image_set[train_sample_idx] = image
-    #         train_sample_idx += 1
-    #
-    # assert train_sample_idx == num_of_train_instance, "Loading image index gets error"
+    train_ptcloud_set = np.load(args.ptcloud_path)
+    print(train_ptcloud_set.shape)
 
     ## Convert numpy array to torch tensor
-    # train_image_set = torch.from_numpy(train_image_set)
-    # train_ptcloud_set = torch.from_numpy(train_ptcloud_set).to(args.device)
+    train_ptcloud_set = torch.from_numpy(train_ptcloud_set).to(args.device)
 
-    # ##randomly sample 10% instances from train set
-    # ### generate random sample index list
-    # num_of_sample = int(0.1 * num_of_train_instance)
-    # sample_index_list = random.sample(range(num_of_train_instance), num_of_sample)
+    base_filename = "distance_matrix/testset_iter_"
 
-    ### slice the all set
-    # sample_train_image_set = train_image_set[sample_index_list].to(args.device)
-    # sample_train_ptcloud_set = train_ptcloud_set[sample_index_list].to(args.device)
-    # logger.info('Number of sampled instances is {}'.format(train_ptcloud_set.shape[0]))
+    for i_iter in range(args.i_start, args.i_end):
+        print("Processing {} .........................".format(i_iter))
+        # ##randomly sample 10% instances from train set
+        # ### generate random sample index list
+        num_samples = 484
+        # index = np.arange(train_ptcloud_set.shape[0])
+        # np.random.shuffle(index)
+        # sample_index_list = index[0:num_samples]
+        # filename = os.path.join(args.matrix_save_path, "testset_iter_{}.npy".format(i_iter))
+        # np.save(filename, sample_index_list)
+        sample_index_filename = base_filename+str(i_iter)+".npy"
+        sample_index_list = np.load(sample_index_filename)
 
-    ## compute distance matrix
-    pt_criterion = ChamfersDistance3().to(args.device)
-    # img_criterion = nn.L1Loss(reduction="sum").to(args.device)
+        ### slice the all set
+        sample_train_ptcloud_set = train_ptcloud_set[sample_index_list].to(args.device)
+        print("#sampls is {}".format(sample_train_ptcloud_set.shape[0]))
+        print(sample_train_ptcloud_set.shape)
 
-    # train_pt_matrix = compute_ptcloud_dismatrix(X1=train_ptcloud_set, X2=train_ptcloud_set,
-    #                                             distance_metric=pt_criterion,
-    #                                             title='testset_similarity_matrix_%s.npy' % (
-    #                                             args.experiment_name), results_dir=args.matrix_save_path,
-    #                                             ifsave=True)
-
-    # train_pt_matrix = Block_compute_ptcloud_dismatrix(X1=train_ptcloud_set, X2=train_ptcloud_set,
-    #                                             distance_metric=pt_criterion,
-    #                                             start_index=args.start_index,
-    #                                             end_index=args.end_index,
-    #                                             title='testset_similarity_matrix_{}_{}_{}.npy'.format(
-    #                                                 args.start_index,
-    #                                                 args.end_index,
-    #                                                 args.experiment_name),
-    #                                             results_dir=args.matrix_save_path,
-    #                                             ifsave=True)
-
-    # train_pt_matrix = compute_ptcloud_dismatrix(X1=train_ptcloud_set, X2=train_ptcloud_set,
-    #                                                   distance_metric=pt_criterion,
-    #                                                   title='clustering_DM_{}.npy'.format(
-    #                                                       args.experiment_name),
-    #                                                   results_dir=args.matrix_save_path,
-    #                                                   ifsave=True)
-
-    if args.selection_list is not None:
-        train_ptcloud_set = np.load(args.ptcloud_path)
-        subsample_list = np.load(args.selection_list)
-        subsample_type = args.selection_list.replace(".npy", "").split("_")[0].split("/")[1]
-        start_index = args.selection_list.replace(".npy", "").split("_")[-1]
-        subset_ptc = train_ptcloud_set[subsample_list,:]
-        subset_ptc = torch.from_numpy(subset_ptc).to(args.device)
+        ## compute distance matrix
+        pt_criterion = ChamfersDistance3().to(args.device)
         train_pt_matrix = compute_ptcloud_dismatrix(
-            X1=subset_ptc, X2=subset_ptc,
+            X1=sample_train_ptcloud_set,
+            X2=sample_train_ptcloud_set,
             distance_metric=pt_criterion,
-            title='distance_matrix_sample_{}__{}_starIndex_{}.npy'.format(
-            subsample_type, len(subsample_list), start_index),
+            title='pred__{}_DM_iter__{}.npy'.format(num_samples, i_iter),
             results_dir=args.matrix_save_path,
-            ifsave=True)
-    else:
-        #### read GT/Pred complete distance matrix ####
-        train_pt_matrix = np.load(args.distance_matrix)
-        print("Done loading distance matrix: {}".format(train_pt_matrix.shape))
-        #### read GT/Pred complete distance matrix ####
+            ifsave=True
+        )
 
+        # train_pt_matrix = Block_compute_ptcloud_dismatrix(X1=train_ptcloud_set, X2=train_ptcloud_set,
+        #                                             distance_metric=pt_criterion,
+        #                                             start_index=args.start_index,
+        #                                             end_index=args.end_index,
+        #                                             title='testset_similarity_matrix_{}_{}_{}.npy'.format(
+        #                                                 args.start_index,
+        #                                                 args.end_index,
+        #                                                 args.experiment_name),
+        #                                             results_dir=args.matrix_save_path,
+        #                                             ifsave=True)
 
-    # # train_img_matrix = compute_img_dismatrix(X1=sample_train_image_set, X2=sample_train_image_set,
-    # #                                          distance_metric=img_criterion,
-    # #                                          title='%s_img_similarity_matrix_%s.npy' % ('train', args.experiment_name),
-    # #                                          results_dir=args.matrix_save_path, ifsave=True)
-    #
-    # ## normalize matrix
-    train_pt_matrix_tr = transform_mat(train_pt_matrix)  # -e^(x/max(x)) then fill the diagonal with 0
-    # train_img_matrix_tr = transform_mat(train_img_matrix)
-    #
-    # ## get partition
-    ### point cloud, calculate affinity propagation parameter: preference
-    part_preference = cal_pref(
-        train_pt_matrix_tr)  # in increasing order, float number in first 10% position in this matrix
-    # ### affinity propagation
-    train_pt_part = get_partition(train_pt_matrix_tr, preference=part_preference)
-    # # ### image, calculate affinity propagation parameter: preference
-    # # part_preference = cal_pref(train_img_matrix_tr)
-    # # ### affinity propagation
-    # # train_img_part = get_partition(train_img_matrix_tr, preference=part_preference)
-    #
-    ## silhouette score
-    pt_ss = silhouette(train_pt_matrix, train_pt_part)
-    # # img_ss = silhouette(train_img_matrix, train_img_part)
-    #
-    # ## report
-    logger.info('Experiment No.{} point cloud silhouette: {}'.format(args.experiment_name, pt_ss))
-    # # logger.info('Experiment No.{} img silhouette: {}'.format(args.experiment_name, img_ss))
-    # logger.info("Start index: {}, end index: {}".format(args.start_index, args.end_index))
-    logger.info('Time:{:3} seconds'.format(time.time() - starter_time))
+        # train_pt_matrix = compute_ptcloud_dismatrix(X1=train_ptcloud_set, X2=train_ptcloud_set,
+        #                                                   distance_metric=pt_criterion,
+        #                                                   title='clustering_DM_{}.npy'.format(
+        #                                                       args.experiment_name),
+        #                                                   results_dir=args.matrix_save_path,
+        #                                                   ifsave=True)
+
+        # ####### compute distance matrix from NPS/FPS #######
+        # if args.selection_list is not None:
+        #     train_ptcloud_set = np.load(args.ptcloud_path)
+        #     subsample_list = np.load(args.selection_list)
+        #     subsample_type = args.selection_list.replace(".npy", "").split("_")[0].split("/")[1]
+        #     start_index = args.selection_list.replace(".npy", "").split("_")[-1]
+        #     subset_ptc = train_ptcloud_set[subsample_list,:]
+        #     subset_ptc = torch.from_numpy(subset_ptc).to(args.device)
+        #     train_pt_matrix = compute_ptcloud_dismatrix(
+        #         X1=subset_ptc, X2=subset_ptc,
+        #         distance_metric=pt_criterion,
+        #         title='distance_matrix_sample_{}__{}_starIndex_{}.npy'.format(
+        #         subsample_type, len(subsample_list), start_index),
+        #         results_dir=args.matrix_save_path,
+        #         ifsave=True)
+        # else:
+        #     #### read GT/Pred complete distance matrix ####
+        #     train_pt_matrix = np.load(args.distance_matrix)
+        #     print("Done loading distance matrix: {}".format(train_pt_matrix.shape))
+        #     #### read GT/Pred complete distance matrix ####
+        # ####### compute distance matrix from NPS/FPS #######
+
+        #
+        # ## normalize matrix
+        train_pt_matrix_tr = transform_mat(train_pt_matrix)  # -e^(x/max(x)) then fill the diagonal with 0
+        # train_img_matrix_tr = transform_mat(train_img_matrix)
+        #
+        # ## get partition
+        ### point cloud, calculate affinity propagation parameter: preference
+        part_preference = cal_pref(train_pt_matrix_tr)  # in increasing order, float number in first 10% position in this matrix
+        # ### affinity propagation
+        train_pt_part = get_partition(train_pt_matrix_tr, preference=part_preference, damping=0.75)
+
+        #
+        ## silhouette score
+        pt_ss = silhouette(train_pt_matrix, train_pt_part)
+        # # img_ss = silhouette(train_img_matrix, train_img_part)
+        #
+        # ## report
+        logger.info('Experiment No.{} point cloud silhouette: {}'.format(args.experiment_name, pt_ss))
+        # # logger.info('Experiment No.{} img silhouette: {}'.format(args.experiment_name, img_ss))
+        # logger.info("Start index: {}, end index: {}".format(args.start_index, args.end_index))
+        # logger.info('Time:{:3} seconds'.format(time.time() - starter_time))
 
 
 if __name__ == '__main__':
@@ -313,6 +299,13 @@ if __name__ == '__main__':
     parser.add_argument('--selection_list', type=str,
                         default=None,
                         help='')
+    parser.add_argument('--i_start', type=int,
+                        default=0,
+                        help='i_iter to start')
+    parser.add_argument('--i_end', type=int,
+                        default=10,
+                        help='i_iter to end')
+
 
     args = parser.parse_args(sys.argv[1:])
     args.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
