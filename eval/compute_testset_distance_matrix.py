@@ -1,3 +1,8 @@
+"""
+Author: Yiru Shen, Yefan Zhou
+Purpose: compute block distance matrix and calculate the SScore
+"""
+
 import os
 import sys
 import argparse
