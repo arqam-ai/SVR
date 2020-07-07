@@ -22,8 +22,6 @@ import torch.nn as nn
 import time
 import logging
 
-os.environ['CUDA_VISIBLE_DEVICES'] = '0'
-
 torch.backends.cudnn.enabled = True
 torch.backends.cudnn.benchmark = True
 
@@ -114,11 +112,15 @@ def Block_compute_ptcloud_dismatrix(X1, X2, distance_metric, start_index, end_in
         point cloud set 2
     distance_metric: func
         metric to measure the distance of two point cloud
+    start_index: int
+        index to start the block matrix computing 
+    end_index:  int 
+        index to end the block matrix computing 
     ifsave: boolean
         if to save the distance matrix to disk
     title: string
         name of the saved matrix
-    results_dir:string
+    results_dir: string
         the path to save the distance matrix
 
     Returns:

@@ -2,6 +2,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 import csv
+from PyTorchEMD.emd import earth_mover_distance
 # # Define Chamfer Loss
 # import sys
 # sys.path.append("utils/chamfer/")
@@ -33,6 +34,21 @@ class ChamfersDistance3(nn.Module):
 		loss = torch.mean(dist0, 1) + torch.mean(dist1, 1)  # B
 		loss = torch.mean(loss)                             # 1
 		return loss
+
+def emd(pred, gt):
+	""" earth mover distance
+	pred  : torch.tensor (N, ptnum, 3)
+		predicted pointcloud 
+	gt    : torch.tensor (N, ptnum, 3)
+		ground truth pointcloud
+	"""
+	ptnum = pred.shape[1]
+	emd = earth_mover_distance(gt, pred, transpose=False)
+	emd /= ptnum
+
+	return emd
+
+
 
 class ChamfersDistance_Nomean(nn.Module):
 
