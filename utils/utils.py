@@ -2,14 +2,28 @@ import os
 import sys
 import argparse
 import errno
-
 import numpy as np
 from matplotlib import pyplot as plt
 from mpl_toolkits.mplot3d import axes3d, proj3d
-
 import torch
 from torch.nn import init
+import trimesh
 
+def trimesh_remove_texture(scene_or_mesh):
+    """convert trimesh mesh or trimesh scene to trimesh mesh only with vertices and faces 
+    
+    Params:
+        mesh_or_scene(Trimesh mesh or scene): mesh or scene 
+    Return:
+        mesh(Trimesh mesh)
+    """
+    if isinstance(scene_or_mesh, trimesh.Scene):
+        mesh = trimesh.util.concatenate([
+            trimesh.Trimesh(vertices=m.vertices, faces=m.faces)
+            for m in scene_or_mesh.geometry.values()])
+    else:
+        mesh = trimesh.Trimesh(vertices=scene_or_mesh.vertices, faces=scene_or_mesh.faces)
+    return mesh
 
 def make_D_label(input, value, device, random=False):
 	if random:

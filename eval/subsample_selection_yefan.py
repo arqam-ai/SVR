@@ -189,7 +189,7 @@ def farthest_selection_yefan(distance_matrix,  num_samples , total_num):
     ## randomly select a start point 
     solution_set.append(remaining_points.pop(\
                             random.randint(0, len(remaining_points)-1)))   # random.randint return random integer N (a <= N <= b)
-    print('enter')
+    
     for _ in tqdm.tqdm(range(num_samples-1), total=num_samples-1):
         ## initialize an empty matrix to hold distance (rows = solution_set  cols = remaining_points) 
         distances = np.zeros((len(solution_set), len(remaining_points)))
@@ -340,9 +340,9 @@ def dismatrix_sample(matrix, indexlist):
 
 def main():
     ## DEFINE sample type
-    subsample_type = "FPS"
+    subsample_type = "NPS_500"
     ## DEFINE sample number 
-    num_samples = 3000
+    num_samples = 400
     
     ## set up logger
     '''
@@ -383,14 +383,15 @@ def main():
         elif subsample_type == "NPS_500":
             selection_list = nearest_selection_fps500(distance_matrix= np.copy(distance_matrix),num_samples=num_samples, 
                                                                                         total_num = 10432, cluster_num = 500)
-        
+            
         ## generate distance cmatrix based on total dataset distance matrix 
         sampled_matrix = dismatrix_sample(distance_matrix, selection_list)
-        one_ss = silhouette_score(sampled_matrix)
+        one_ss  = silhouette_score(sampled_matrix)
         sum_ss += one_ss
         print('Sumple type {}, sample number {}, Sscore is {}'.format(subsample_type, num_samples, one_ss))
         ## save the sampling index as npy file
-        np.save(os.path.join(dst_folder, '{}_samplenum_{}_index_{}.npy'.format(subsample_type, num_samples, step)), np.array(selection_list))
+#        np.save(os.path.join(dst_folder, '{}_samplenum_{}_index_{}.npy'.format(subsample_type, num_samples, step)), np.array(selection_list))
+
 #        logger.info('{} silhouette score is {}'.format(subsample_type, silhouette_score(sampled_matrix)))
     print('Sumple type {}, sample number {}, Mean Sscore is {}'.format(subsample_type, num_samples, sum_ss/10))
 if __name__ == "__main__":

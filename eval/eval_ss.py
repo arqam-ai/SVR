@@ -15,7 +15,6 @@ from utils.loss import ChamfersDistance3
 import torch.nn as nn
 import time
 import logging
-os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 
 def compute_img_dismatrix(X1, X2, distance_metric, title=None, results_dir=None, ifsave=False):
 	"""return distance matrix between img set X1 and img set X2
@@ -88,6 +87,7 @@ def compute_ptcloud_dismatrix(X1, X2, distance_metric, title=None, results_dir=N
 		np.save(os.path.join(results_dir,title), D)
 		print("saved to " + os.path.join(results_dir, title)) 
 	return D
+
 
 def main(args):
 

@@ -25,7 +25,6 @@ import glog as logger
 import logging
 
 #from encoders import Encoder
-os.environ['CUDA_VISIBLE_DEVICES'] = '1'
 
 class Stats(object):
 	def __init__(self):

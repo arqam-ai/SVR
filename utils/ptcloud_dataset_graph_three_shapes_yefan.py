@@ -15,7 +15,7 @@ import matplotlib
 matplotlib.use('Agg')
 from matplotlib import pyplot as plt
 import json
-from utils.loss import ChamfersDistance3
+from utils.loss import ChamferDistance
 import torch.nn as nn
 from torchvision import transforms, utils
 import tqdm

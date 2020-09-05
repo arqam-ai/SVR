@@ -17,7 +17,7 @@ from model.clustering import class_counter
 from utils.ptcloud_dataset_graph_three_shapes_yefan import image_preprocessing, compute_squared_EDM_method, \
     transform_mat, cal_pref, get_partition, silhouette
 from utils.utils import check_exist_or_mkdirs
-from utils.loss import ChamfersDistance3
+from utils.loss import ChamferDistance
 import torch.nn as nn
 import time
 import logging
@@ -102,6 +102,29 @@ def compute_ptcloud_dismatrix(X1, X2, distance_metric, title=None, results_dir=N
     return D
 
 
+def Block_compute_codeword_dismatrix(X1, X2, distance_metric, start_index, end_index, title=None, results_dir=None, ifsave=False):
+    """ return distance matrix of X1 
+    Params:
+    ----------
+    X1: (N, 512) torch.tensor
+        codeword
+    """
+    N = X1.shape[0]
+    # initialize distance matrix
+    D = torch.zeros([N, N])
+    # iterate over one group of ptcloud
+    for i in range(start_index, end_index):
+        if i % 10 == 0:
+            print("Processing {} ...........................................".format(i))
+        for j in range(i+1, N):
+            D[i, j] = distance_metric(X1[i], X2[j])
+    if ifsave:
+        D = D.cpu().numpy()
+        print("Saving distance matrix ............................................")
+        np.save(os.path.join(results_dir, title), D)
+        print("saved to " + os.path.join(results_dir, title))
+    return D
+
 def Block_compute_ptcloud_dismatrix(X1, X2, distance_metric, start_index, end_index, title=None, results_dir=None, ifsave=False):
     """return distance matrix between ptcloud X1 ptcloud X2
     Params:
@@ -124,7 +147,7 @@ def Block_compute_ptcloud_dismatrix(X1, X2, distance_metric, start_index, end_in
         the path to save the distance matrix
 
     Returns:
-    ----------------------------------
+    -------------------------#---------
     D: (ptnum, ptnum) torch.tensor
         distance matrix
     """
@@ -133,13 +156,10 @@ def Block_compute_ptcloud_dismatrix(X1, X2, distance_metric, start_index, end_in
     D = torch.zeros([N, N])
     # iterate over one group of ptcloud
     for i in range(start_index, end_index):
-        if i % 10 == 0:
-            print("Processing {} ...........................................".format(i))
         for j in range(i+1, N):
             D[i, j] = distance_metric(X1[i].unsqueeze(0), X2[j].unsqueeze(0))
     if ifsave:
         D = D.cpu().numpy()
-        print("Saving distance matrix ............................................")
         np.save(os.path.join(results_dir, title), D)
         print("saved to " + os.path.join(results_dir, title))
     return D

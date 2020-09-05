@@ -16,9 +16,9 @@ import tqdm
 import random
 from utils.plot_image_grid import visuaize_pts
 from utils.utils import check_exist_or_mkdirs
-from utils.loss import ChamfersDistance3
+from utils.loss import ChamferDistance
 import matplotlib.pyplot as plt 
-os.environ['CUDA_VISIBLE_DEVICES'] = '1'
+
 
 def class_counter(data_basedir, splits_path, class_path, split_name):
     """return What 3D dataset class and instance information

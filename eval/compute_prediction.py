@@ -60,7 +60,7 @@ def silhouette_score(distance_matrix):
     part_preference = cal_pref(distance_matrix_tr)          # in increasing order, float number in first 10% position in this matrix
     ### affinity propagation
     matrix_part = get_partition(distance_matrix_tr, preference = part_preference)
-    print("affinity propagation label number:  ", len(set(matrix_part)))
+#    print("affinity propagation label number:  ", len(set(matrix_part)))
     #print("paritition done Time : {:3f} seconds".format(time.time()-starter_time))
     ## silhouette score
     ss = silhouette(distance_matrix, matrix_part)

@@ -87,6 +87,8 @@ Output:
 1. [link](https://github.com/YefanZhou/ECCV2020_rebuttal/blob/master/eval/compute_prediction.py)  generate **Clustering Method** prediction distance matrx (10432 x 10432) based on cluster distance matrix.
 
    and calculate silhouette score of  **Clustering Method** prediction distance matrx (10432 x 10432) 
+   
+   the Clustering Method distance matrix is saved to [drive](https://drive.google.com/drive/u/1/folders/1Z0-AcssqlkDEHrwregtYIuV3dhrz86st)
 
 ```bash
 cd eval
@@ -231,4 +233,30 @@ python subsample_selection_yefan.py
 |      Oracle-NN       | 0.0719  |         |         |         |         |         |
 | AE(resnet_two_fold)  | 0.0768  |         |         |         |         |         |
 |    AE(label5_ae)     | 0.0716  |         |         |         |         |         |
+
+
+
+------
+
+## Additional Experiments 
+
+##### July 7th
+
+1. finished Computation of Chamfer Distance of PointCloud [link](https://github.com/YefanZhou/ECCV2020_rebuttal/blob/master/eval/train_all_mat.sh)
+
+```bash
+sh train_all_mat.sh
+```
+
+**July 8th**
+
+1. Get latent code of 3D reconstruction network with loss of 0.768
+
+**July 29th**
+
+eval/compute_prediction.py   function : silhouette_score  
+
+create a new file:  evaluation.py to evaluate the dataset sscore, but failed maybe take too much time 
+
+dataloader 有问题， 我感觉是机器问题啊
 

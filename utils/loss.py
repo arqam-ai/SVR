@@ -1,19 +1,17 @@
+import sys
 import numpy as np
 import torch
 import torch.nn as nn
 import csv
-from PyTorchEMD.emd import earth_mover_distance
-# # Define Chamfer Loss
-# import sys
-# sys.path.append("utils/chamfer/")
-# import dist_chamfer as ext
-# distChamfer = ext.chamferDist()
-#from chamfer_distance import ChamferDistance
+from utils.PyTorchEMD.emd import earth_mover_distance
+# Define Chamfer Loss
+#from pytorch3d.loss import chamfer_distance
+#import utils.ChamferDistancePytorch.chamfer3D.dist_chamfer_3D as dist_chamfer_3D
+#from utils.ChamferDistancePytorch.chamfer_python import distChamfer
 
+class ChamferDistance(nn.Module):
 
-class ChamfersDistance3(nn.Module):
-
-	def forward(self, input1, input2):
+	def forward(self, input1, input2, mode='nonsquared'):
 		# input1, input2: BxNxK, BxMxK, K = 3
 		B, N, K = input1.shape
 		_, M, _ = input2.shape
@@ -26,8 +24,10 @@ class ChamfersDistance3(nn.Module):
 		input22 = input22.expand(B, N, M, K)    # BxNxMxK
 		# compute the distance matrix
 		D = input11 - input22                   # BxNxMxK
-		D = torch.norm( D, p=2, dim=3 )         # BxNxM
-
+		D = torch.norm(D, p=2, dim=3)           # BxNxM
+		if mode == 'squared':
+			D = torch.norm(D, p=2, dim=3)**2    # for L2 
+			
 		dist0, _ = torch.min( D, dim=1 )        # BxM
 		dist1, _ = torch.min( D, dim=2 )        # BxN
 
@@ -35,6 +35,18 @@ class ChamfersDistance3(nn.Module):
 		loss = torch.mean(loss)                             # 1
 		return loss
 
+		# pytorch3d 
+		#loss_ptc_fine_pytorch3d, _ = chamfer_distance(ptcloud_pred_fine, ptcloud)
+
+		# atlasnet c cuda
+		#chamLoss = dist_chamfer_3D.chamfer_3DDist()
+		#dist1, dist2, idx1, idx2 = chamLoss(ptcloud_pred_fine, ptcloud)
+		#loss_ptc_fine_atlas = dist1.mean() + dist2.mean()
+
+		# atlasnet python
+		#dist1, dist2,_,_ = distChamfer(ptcloud_pred_fine, ptcloud)
+		#loss_ptc_fine_atlaspython = dist1.mean() + dist2.mean()
+	
 def emd(pred, gt):
 	""" earth mover distance
 	pred  : torch.tensor (N, ptnum, 3)
@@ -48,46 +60,7 @@ def emd(pred, gt):
 
 	return emd
 
-
-
-class ChamfersDistance_Nomean(nn.Module):
-
-	def forward(self, input1, input2):
-		# input1, input2: BxNxK, BxMxK, K = 3
-		B, N, K = input1.shape
-		_, M, _ = input2.shape
-
-		# Repeat (x,y,z) M times in a row
-		input11 = input1.unsqueeze(2)           # BxNx1xK
-		input11 = input11.expand(B, N, M, K)    # BxNxMxK
-		# Repeat (x,y,z) N times in a column
-		input22 = input2.unsqueeze(1)           # Bx1xMxK
-		input22 = input22.expand(B, N, M, K)    # BxNxMxK
-		# compute the distance matrix
-		D = input11 - input22                   # BxNxMxK
-		D = torch.norm( D, p=2, dim=3 )         # BxNxM
-
-		dist0, _ = torch.min( D, dim=1 )        # BxM
-		dist1, _ = torch.min( D, dim=2 )        # BxN
-
-		loss = torch.mean(dist0, 1) + torch.mean(dist1, 1)  # B
-#		loss = torch.mean(loss)                             # 1
-		return loss
-    
-'''    
-class ChamfersDistance(nn.Module):
-
-	def __init__(self):
-		super(ChamfersDistance, self).__init__()
-		self.chamfer_dist = ChamferDistance()
-
-	def forward(self, input1, input2):
-		dist1, dist2 = self.chamfer_dist(input1, input2)
-		loss = (torch.mean(dist1)) + (torch.mean(dist2))
-		return loss
-'''    
-    
-    
+   
 class MaskedL1(nn.Module):
 	def __init__(self):
 		super(MaskedL1, self).__init__()

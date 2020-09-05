@@ -17,12 +17,10 @@ import tqdm
 from datetime import datetime
 from utils.plot_image_grid import visuaize_pts
 from utils.utils import check_exist_or_mkdirs
-from utils.loss import ChamfersDistance3
+from utils.loss import ChamferDistance
 import matplotlib.pyplot as plt
 from collections import defaultdict
 import collections
-os.environ['CUDA_VISIBLE_DEVICES'] = '0'
-
 torch.backends.cudnn.enabled = True
 torch.backends.cudnn.benchmark = True
 

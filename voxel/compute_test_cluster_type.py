@@ -15,8 +15,6 @@ from utils.loss import ChamfersDistance3
 import matplotlib.pyplot as plt
 from collections import defaultdict
 import collections
-os.environ['CUDA_VISIBLE_DEVICES'] = '0'
-
 torch.backends.cudnn.enabled = True
 torch.backends.cudnn.benchmark = True
 
