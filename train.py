@@ -61,7 +61,6 @@ def main(args):
                 batch_size=args.val_batch_size, shuffle=False,**kwargs)
     print("Initialize cache={}".format(time.time()-starter_time))
 
-
     if args.model == "foldingres6" or args.model == "foldingres18":
         netG = GeneratorVanilla(
             grid_dims=(32,32,1),
@@ -78,7 +77,6 @@ def main(args):
 					default_path = os.path.join(abspath,'model/im2mesh/configs/default.yaml')), device = args.device)
     	
     #netG = torch.nn.DataParallel(netG, device_ids=[0, 1])
-
     logger = logging.getLogger()
     logger.info('Number of parameters={}'.format(count_parameter_num(netG.parameters())))
     check_exist_or_mkdirs(args.log_dir)
