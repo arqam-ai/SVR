@@ -1,8 +1,5 @@
 '''
 Training stage for auto encoder 
-
-author : Yefan
-created: 8/10/19 12:00 AM
 '''
 import os
 import sys
@@ -21,6 +18,10 @@ from model.generator_res_Folding import GeneratorVanilla
 from utils.utils import count_parameter_num, init_weights, check_exist_or_mkdirs
 from utils.loss import ChamferDistance
 from traintester import TrainTester
+import model.im2mesh.config as config
+
+abspath = os.path.dirname(os.path.abspath(__file__))
+
 
 def main(args):
     
@@ -60,18 +61,21 @@ def main(args):
                 batch_size=args.val_batch_size, shuffle=False,**kwargs)
     print("Initialize cache={}".format(time.time()-starter_time))
 
-    netG = GeneratorVanilla(
-        grid_dims=(32,32,1),
-        resgen_width=512,
-        resgen_depth=5,
-        resgen_codelength=512,
-        class_num = 55,
-        read_view = args.read_view,
-        folding_twice = args.folding_twice)    
-    
-    print(str(netG))
-    
-    #netG.to(args.device)	
+
+    if args.model == 'foldingnet':
+        netG = GeneratorVanilla(
+            grid_dims=(32,32,1),
+            resgen_width=512,
+            resgen_depth=5,
+            resgen_codelength=512,
+            class_num = 55,
+            read_view = args.read_view,
+            folding_twice = args.folding_twice)  
+
+    elif args.model == 'psgn':
+        netG = config.get_model(config.load_config(path = os.path.join(abspath, 'model/im2mesh/configs/img/psgn.yaml'),
+					default_path = os.path.join(abspath,'model/im2mesh/configs/default.yaml')), device = args.device)
+    	
     netG = torch.nn.DataParallel(netG, device_ids=[0, 1])
 
     logger = logging.getLogger()
@@ -238,9 +242,14 @@ if __name__ == "__main__":
                       help="whether/how to shuffle point order (no/offline/online)")
 
     ## training parameter
+    parser.add_option("--model",
+                    dest="model", type=str,
+                    default="foldingnet",
+                    help=['foldingnet','psgn'])
+                    
     parser.add_option("--use-manifold",
-                      dest="use_manifold", action = "store_true",
-                      default= False,
+                      dest="use_manifold", action="store_true",
+                      default=False,
                       help='whether to use manifold learning')
 
     parser.add_option("--alpha",

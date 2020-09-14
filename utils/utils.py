@@ -249,6 +249,209 @@ def count_parameter_num(params):
     return cnt
 
 
+class FunctionGenerator(object):
+    def invert(self):
+        print("This function has to be reimplemented in every inherited class")
+        
+class ScaleFunctions(FunctionGenerator):
+    def __init__(self, operator, inplace):
+        self.operator = operator.clone()
+        self.inplace = inplace
+
+    def __call__(self, points):
+        if self.inplace:
+            points *= self.operator
+            return points
+        else:
+            return points * self.operator
+
+    def invert(self):
+        self.operator = 1.0 / self.operator
+
+class TranslationFunctions(FunctionGenerator):
+    def __init__(self, operator, inplace):
+        self.operator = operator.clone()
+        self.inplace = inplace
+
+    def __call__(self, points):
+        if self.inplace:
+            points += self.operator
+            return points
+        else:
+            return points + self.operator
+
+    def invert(self):
+        self.operator = -self.operator
+
+class Operation(object):
+    def __init__(self, points, inplace=True, keep_track=False):
+        """
+        The keep track boolean is used in case one wants to unroll all the operation that have been performed
+        :param keep_track: boolean
+        """
+        self.keep_track = keep_track
+        self.transforms = []
+        self.points = points
+        self.device = points.device
+        self.inplace = inplace
+        self.dim = points.dim()
+        self.type = self.points.type()
+
+        if not self.inplace:
+            self.points = self.points.clone()
+        if self.dim == 2:
+            self.points = self.points.unsqueeze_(0)
+        elif self.dim == 3:
+            pass
+        else:
+            print("Input should have dimension 2 or 3")
+
+    def apply(self, points):
+        for func in self.transforms:
+            points = func(points)
+        return points
+
+    def invert(self):
+        self.transforms.reverse()
+        for func in self.transforms:
+            func.invert()
+
+    def scale(self, scale_vector):
+        scaling_op = ScaleFunctions(scale_vector.to(self.device).type(self.type), inplace=self.inplace)
+        self.points = scaling_op(self.points)
+        if self.keep_track:
+            self.transforms.append(scaling_op)
+        return
+
+    def translate(self, translation_vector):
+        translation_op = TranslationFunctions(translation_vector.to(self.device).type(self.type), inplace=self.inplace)
+        self.points = translation_op(self.points)
+        if self.keep_track:
+            self.transforms.append(translation_op)
+        return
+
+    def rotate(self, rotation_vector):
+        rotation_op = RotationFunctions(rotation_vector.to(self.device).type(self.type), inplace=self.inplace)
+        self.points = rotation_op(self.points)
+        if self.keep_track:
+            self.transforms.append(rotation_op)
+        return
+
+    @staticmethod
+    def get_3D_rot_matrix(axis, rad_angle):
+        """
+        Get a 3D rotation matrix around axis with angle in radian
+        :param axis: int
+        :param angle: torch.tensor of size Batch.
+        :return: Rotation Matrix as a tensor
+        """
+        cos_angle = torch.cos(rad_angle)
+        sin_angle = torch.sin(rad_angle)
+        rotation_matrix = torch.zeros(rad_angle.size(0), 3, 3)
+        rotation_matrix[:, 1, 1].fill_(1)
+        rotation_matrix[:, 0, 0].copy_(cos_angle)
+        rotation_matrix[:, 0, 2].copy_(sin_angle)
+        rotation_matrix[:, 2, 0].copy_(-sin_angle)
+        rotation_matrix[:, 2, 2].copy_(cos_angle)
+        if axis == 0:
+            rotation_matrix = rotation_matrix[:, [1, 0, 2], :][:, :, [1, 0, 2]]
+        if axis == 2:
+            rotation_matrix = rotation_matrix[:, [0, 2, 1], :][:, :, [0, 2, 1]]
+        return rotation_matrix
+
+    def rotate_axis_angle(self, axis, rad_angle, normals=False):
+        """
+        :param points: Batched points
+        :param axis: int
+        :param angle: batched angles
+        :return:
+        """
+        rot_matrix = Operation.get_3D_rot_matrix(axis=axis, rad_angle=rad_angle)
+        if normals:
+            rot_matrix = torch.cat([rot_matrix, rot_matrix], dim=2)
+        self.rotate(rot_matrix)
+        return
+
+class Normalization(Operation):
+    def __init__(self, *args, **kwargs):
+        super(Normalization, self).__init__(*args, **kwargs)
+
+    def center_pointcloud(self):
+        """
+        In-place centering
+        :param points:  Tensor Batch, N_pts, D_dim
+        :return: None
+        """
+        # input :
+        # ouput : torch Tensor N_pts, D_dim
+        centroid = torch.mean(self.points, dim=1, keepdim=True)
+        self.translate(-centroid)
+        return self.points
+
+    @staticmethod
+    def center_pointcloud_functional(points):
+        operator = Normalization(points, inplace=False)
+        return operator.center_pointcloud()
+
+    def normalize_unitL2ball(self):
+        """
+        In-place normalization of input to unit ball
+        :param points: torch Tensor Batch, N_pts, D_dim
+        :return: None
+        """
+        # input : torch Tensor N_pts, D_dim
+        # ouput : torch Tensor N_pts, D_dim
+        #
+        self.center_pointcloud()
+        scaling_factor_square, _ = torch.max(torch.sum(self.points ** 2, dim=2, keepdim=True), dim=1, keepdim=True)
+        scaling_factor = torch.sqrt(scaling_factor_square)
+        self.scale(1.0 / scaling_factor)
+        return self.points
+
+    @staticmethod
+    def normalize_unitL2ball_functional(points):
+        operator = Normalization(points, inplace=False)
+        return operator.normalize_unitL2ball()
+
+    def center_bounding_box(self):
+        """
+        in place Centering : return center the bounding box
+        :param points: torch Tensor Batch, N_pts, D_dim
+        :return: diameter
+        """
+        min_vals, _ = torch.min(self.points, 1, keepdim=True)
+        max_vals, _ = torch.max(self.points, 1, keepdim=True)
+        self.translate(-(min_vals + max_vals) / 2)
+        return self.points, (max_vals - min_vals) / 2
+
+    @staticmethod
+    def center_bounding_box_functional(points):
+        operator = Normalization(points, inplace=False)
+        points, _ = operator.center_bounding_box()
+        return points
+
+    def normalize_bounding_box(self, isotropic=True):
+        """
+        In place : center the bounding box and uniformly scale the bounding box to edge lenght 1 or max edge length 1 if isotropic is True  (default).
+        :param points: torch Tensor Batch, N_pts, D_dim
+        :return:
+        """
+        _, diameter = self.center_bounding_box()
+        if isotropic:
+            diameter, _ = torch.max(diameter, 2, keepdim=True)
+        self.scale(1.0 / diameter)
+        return self.points
+
+    @staticmethod
+    def normalize_bounding_box_functional(points):
+        operator = Normalization(points, inplace=False)
+        return operator.normalize_bounding_box()
+
+    @staticmethod
+    def identity_functional(points):
+        return points
+
+
 class TrainTestMonitor(object):
 
     def __init__(self, log_dir, plot_loss_max=4., plot_extra=False):

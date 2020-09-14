@@ -38,6 +38,7 @@ class TrainTester(object):
 
     def __init__(self, netG, criterion_G,  criterion_C, criterion_M, optmizer_G, lr_scheduler_G, alpha, logger, args):
         self.netG= netG
+        self.model = args.model
         self.criterion_G = criterion_G
         self.criterion_C = criterion_C
         self.criterion_M = criterion_M
@@ -160,20 +161,24 @@ class TrainTester(object):
             # (1) Update Image&PCG network:                   #
             ###################################################
             self.netG.zero_grad()
- 
-            ptcloud_pred_primitive, ptcloud_pred_fine, codeword, _ = self.netG(image)
-            loss_ptc_fine = self.criterion_G(ptcloud_pred_fine, ptcloud)
+            if self.model == 'foldingnet':
+                ptcloud_pred_primitive, ptcloud_pred_fine, _ , _ = self.netG(image)
+                loss_ptc_fine = self.criterion_G(ptcloud_pred_fine, ptcloud)
 
-            if self.folding_twice:
-                loss_ptc_primitive = self.criterion_G(ptcloud_pred_primitive, ptcloud)
-                batch_primitiveCD_loss = self.lambda_loss_primitive * loss_ptc_primitive.item()
+                batch_fineCD_loss = self.lambda_loss_fine * loss_ptc_fine.item()
+                loss_all = self.lambda_loss_fine * loss_ptc_fine
+
+                if self.folding_twice:
+                    loss_ptc_primitive = self.criterion_G(ptcloud_pred_primitive, ptcloud)
+#                    batch_primitiveCD_loss = self.lambda_loss_primitive * loss_ptc_primitive.item()
+                    loss_all += self.lambda_loss_primitive * loss_ptc_primitive
+
+            elif self.model == 'psgn':
+                ptcloud_pred_fine, codeword = self.netG(image)
+                loss_ptc_fine = self.criterion_G(ptcloud_pred_fine, ptcloud)
+                batch_fineCD_loss = self.lambda_loss_fine * loss_ptc_fine.item()
+                loss_all = self.lambda_loss_fine * loss_ptc_fine
             
-            batch_fineCD_loss = self.lambda_loss_fine * loss_ptc_fine.item()
-            loss_all = self.lambda_loss_fine * loss_ptc_fine
-
-            if self.folding_twice:
-                loss_all += self.lambda_loss_primitive * loss_ptc_primitive
-
             loss_all.backward()
             self.optimizer_G.step()
 
@@ -181,7 +186,7 @@ class TrainTester(object):
             batch_loss = loss_all.item()   
             loss_sum_fineCD += batch_fineCD_loss
             loss_sum += batch_loss
-            
+
             if self.running_loss is None:
                 self.running_loss = batch_loss
             else:
@@ -229,7 +234,11 @@ class TrainTester(object):
                 Variable(ptcloud).to(self.device), \
 
             with torch.set_grad_enabled(False):
-                ptcloud_pred_primitive, ptcloud_pred_fine, codeword, _ = self.netG(image)
+                if self.model == 'foldingnet':
+                    _, ptcloud_pred_fine, codeword, _ = self.netG(image)
+                elif self.model == 'psgn':
+                    ptcloud_pred_fine, codeword = self.netG(image)
+
                 loss_ptc_fine = self.criterion_G(ptcloud_pred_fine, ptcloud)
             
             if epoch == self.total_epochs + 1 and self.save_results:
@@ -237,7 +246,7 @@ class TrainTester(object):
                 ptcloud.cpu().numpy(), ptcloud_pred_fine.cpu().numpy()
                 
                 code = codeword.cpu().numpy()
-                
+                code = np.squeeze(code)
                 self.finalchamferloss.push(batch_idx, loss = loss_ptc_fine.item())
                 np.save('%s/oriptcloud_%04d.npy' % (self.vis_dir, batch_idx),pc_orig)
                 np.save('%s/fineptcloud_%04d.npy'%(self.vis_dir, batch_idx),pc2)
@@ -245,8 +254,8 @@ class TrainTester(object):
 
                 img = image.cpu()
                 what3d_dataset.data_visualizer(pc_orig, img, type, self.vis_dir, batch_idx)
-                img = img.numpy()
-                self.image_saver.save(img)
+#                img = img.numpy()
+#                self.image_saver.save(img)
 
             batch_idx += 1
             chamfer_loss += loss_ptc_fine.item()     
