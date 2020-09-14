@@ -8,16 +8,14 @@
 
 
 # Experiment
-*.zip
-*.pkl
-*.png
-*.npy
-*.json
-*.ipynb
-.vscode
+**/*.zip
+**/*.pkl
+**/*.png
+**/*.npy
+**/*.json
+**/*.ipynb
+**/.vscode
 **/.DS_Store
-.DS_Store
-
-what3d_clusters/*.zip
-img/*.png
+**/what3d_clusters/*.zip
+**/img/*.png
 **/*.zip
