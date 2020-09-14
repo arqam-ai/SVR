@@ -62,30 +62,28 @@ def main(args):
     print("Initialize cache={}".format(time.time()-starter_time))
 
 
-    if args.model == 'foldingnet':
+    if args.model == "foldingres6" or args.model == "foldingres18":
         netG = GeneratorVanilla(
             grid_dims=(32,32,1),
             resgen_width=512,
             resgen_depth=5,
             resgen_codelength=512,
-            class_num = 55,
-            read_view = args.read_view,
-            folding_twice = args.folding_twice)  
+            class_num=55,
+            block=args.model,
+            read_view=args.read_view,
+            folding_twice=args.folding_twice)
 
     elif args.model == 'psgn':
         netG = config.get_model(config.load_config(path = os.path.join(abspath, 'model/im2mesh/configs/img/psgn.yaml'),
 					default_path = os.path.join(abspath,'model/im2mesh/configs/default.yaml')), device = args.device)
     	
-    netG = torch.nn.DataParallel(netG, device_ids=[0, 1])
+    #netG = torch.nn.DataParallel(netG, device_ids=[0, 1])
 
     logger = logging.getLogger()
     logger.info('Number of parameters={}'.format(count_parameter_num(netG.parameters())))
     check_exist_or_mkdirs(args.log_dir)
     file_log_handler = logging.FileHandler(os.path.join(args.log_dir,args.log_filename))
     logger.addHandler(file_log_handler)
-
-    #stderr_log_handler = logging.StreamHandler(sys.stdout)
-    #logger.addHandler(stderr_log_handler)
 
     logger.setLevel('INFO')
     formatter = logging.Formatter()

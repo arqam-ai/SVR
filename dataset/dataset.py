@@ -232,6 +232,7 @@ class what3d_dataset_views(Dataset):
         self.image_height = image_height
         self.image_width = image_width
         self.data_basedir = data_basedir
+        self.mode = mode
         self.img_view_list = list()
         self.class_list, _ = class_counter(os.path.join(self.data_basedir, splits_path, class_path))
         image_path_list = list()
@@ -243,14 +244,17 @@ class what3d_dataset_views(Dataset):
                 instance_id = x[:-1]
                 image_path_list.append(os.path.join(data_basedir, img_path, clname, instance_id))
         
-        if mode == 'viewer':
+        if self.mode == 'viewer':
             for idx, view in enumerate(views):
                 ptcloud_path = ptcloud_path[:-5] + '%s.npz'%view
                 if idx == 0:
                     self.data_ptcloud = np.load(os.path.join(data_basedir, ptcloud_path))[split_name]
                 else:
                     self.data_ptcloud = np.concatenate((self.data_ptcloud, np.load(os.path.join(data_basedir, ptcloud_path))[split_name]), axis=0)
-
+        elif self.mode == 'object':
+            ptcloud_path = ptcloud_path[:-5] + '%s.npz'%"object"
+            self.data_ptcloud = np.load(os.path.join(data_basedir, ptcloud_path))[split_name]
+            self.ptcloud_num = self.data_ptcloud.shape[0]
         ## if sample ratio < 1.0, then sample the path list 
         total_instance_num = len(image_path_list)
         
@@ -277,7 +281,11 @@ class what3d_dataset_views(Dataset):
         return self.instance_num
 
     def __getitem__(self, idx):
-        ptcloud = self.data_ptcloud[idx]
+        if self.mode == 'viewer':
+            ptcloud = self.data_ptcloud[idx]
+        elif self.mode == 'object':
+            ptcloud = self.data_ptcloud[idx % self.ptcloud_num]
+
         image = cv2.imread(self.img_view_list[idx]) 
         if image.shape[0] != self.image_height and image.shape[1] != self.width:
             image = self.convertor(image)
@@ -323,12 +331,12 @@ def validtion(args):
 
 
 def main(args):
-    
+    test_type = 'train'
     kwargs = {'num_workers':16, 'pin_memory':True}
     train_loader = torch.utils.data.DataLoader(
                 what3d_dataset_views(data_basedir=args.data_basedir, ptcloud_path=args.ptcloud_path, 
                 img_path=args.img_path, label_path=args.label_path, 
-                splits_path=args.splits_path, split_name='test', 
+                splits_path=args.splits_path, split_name=test_type, 
                 class_path=args.class_path, sample_ratio=args.sample_ratio,
                 image_height=args.image_size, image_width=args.image_size, 
                 views=list(args.views), read_view=args.read_view,
@@ -337,13 +345,12 @@ def main(args):
     
     pbar = tqdm.tqdm(total = len(train_loader), desc = 'batch')
     instance_num = int(len(train_loader)/5) 
-    print(instance_num)
-    index = random.sample(range(instance_num), 1)
+    #print(instance_num)
+    index = random.sample(range(instance_num), 2)
     multiview_index = what3d_dataset_views.ptcloud_index(index, offset=instance_num, view_num=5)
-    print(multiview_index)
     for batch_idx, batch in enumerate(train_loader):
         if batch_idx in multiview_index:
-            what3d_dataset.data_visualizer(batch['ptcloud'], batch['image'], 'test', "../img/dataset/test", batch_idx)
+            what3d_dataset.data_visualizer(batch['ptcloud'], batch['image'], test_type, "../img/dataset/test/object", batch_idx)
         pbar.update(1)
     
     
@@ -377,12 +384,13 @@ if __name__ == '__main__':
     parser.add_argument("--sample-ratio",dest="sample_ratio", type=float, default = 1.0,
                       help="ratio to sample the dataset")
 
-    parser.add_argument("--views",dest="views", type=str,default= '01234',help="five view for each instance")
+    parser.add_argument("--views",dest="views", type=str,default= '01234',
+                    help="five view for each instance")
 
     parser.add_argument("--pts-num",dest="pts_num", type=int,default=1024,
                       help="number of points in a ptcloud")
 
-    parser.add_argument("--mode", dest="mode", type=str,default="viewer", 
+    parser.add_argument("--mode", dest="mode", type=str,default="object", 
                       help="['viewer', 'object']")
 
     parser.add_argument("--read-view", action="store_true",dest="read_view",
