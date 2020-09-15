@@ -88,7 +88,7 @@ class TrainTester(object):
         self.finalchamferloss = Stats()
         self.bn1_stats = BN_Stats("bn1")
         self.bn6_stats = BN_Stats("bn6")
-        self.bn_stats_epoch = [3, 6, 9]
+        self.bn_stats_epoch = range(0, self.total_epochs, args.bnstats_step)
 
         self.hk_handles = []
         self.use_manifold = args.use_manifold
@@ -343,7 +343,7 @@ class TrainTester(object):
                     epoch=epoch,
                     loader=train_loader,
                 )
-######################## BN statistics end #######################                
+######################## BN statistics END #######################                
                 if epoch in self.bn_stats_epoch and self.if_BNstats:
                     self.hook_bn(mode='disable')
                     self.bn1_stats.save(os.path.join(self.stats_dir, "epoch%d_layer_%s.npz"%(epoch,"bn1")))

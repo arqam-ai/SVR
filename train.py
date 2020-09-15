@@ -332,7 +332,9 @@ if __name__ == "__main__":
                       dest="folding_twice",
                       default= False,
                       help="if folding twice", )
+
     parser.add_option("--if-BNstats", action="store_true", dest="if_BNstats", default=False, help="if calculate bn stats")
+    parser.add_option("--bnstats-step", type=int, dest="bnstats_step", default=30, help="step to log batch norm stats")
     
     (args, opts) = parser.parse_args()
    
