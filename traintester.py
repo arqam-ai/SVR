@@ -17,6 +17,7 @@ import tqdm
 from pathlib import Path
 import time
 import utils.plot_image_grid as plot_image_grid
+from utils.plot_log import plot_log as plot_log
 from dataset.dataset import what3d_dataset
 
 class Stats(object):
@@ -33,6 +34,22 @@ class Stats(object):
         np.savez_compressed(
             file,
             iter_loss=np.asarray(self.iter_loss))
+
+class BN_Stats(object):
+    def __init__(self, layer_name):
+        self.stastics = {"mean":[], "var":[]}
+        self.layer_name = layer_name
+    def __call__(self, module, module_in, module_out):
+        self.stastics["mean"].append(torch.mean(module_out,dim=[0,2]).detach().cpu().numpy().astype(np.float16))
+        self.stastics["var"].append(torch.var(module_out,dim=[0,2],unbiased=False).detach().cpu().numpy().astype(np.float16))
+    def clear(self):
+        self.stastics = {"mean":[], "var":[]}
+    def save(self, path):
+        np.savez_compressed(path,
+                mean = np.array(self.stastics["mean"]), 
+                var = np.array(self.stastics["var"]))
+        self.clear()
+
 
 class TrainTester(object):
 
@@ -67,21 +84,20 @@ class TrainTester(object):
         self.stats_finecd_epochval = Stats()
         self.stats_finecd_itertest = Stats()
 
-#		self.stats_manifold_itertrain = Stats()
-#		self.stats_manifold_epochtest = Stats()
-#		self.stats_manifold_epochtrain = Stats()
-#		self.stats_manifold_epochval = Stats()
-
         self.stats_lr_itertrain = Stats()
         self.finalchamferloss = Stats()
+        self.bn1_stats = BN_Stats("bn1")
+        self.bn6_stats = BN_Stats("bn6")
+        self.bn_stats_epoch = [3, 6, 9]
 
+        self.hk_handles = []
         self.use_manifold = args.use_manifold
         self.running_loss = None
         self.running_factor = 0.9
         self.epoch_callbacks = [self.save_stats]
         self.train_loss = float("inf")
         self.val_loss = float("inf")
-        #self.batch_size = args.train_batch_size
+        
         self.device = args.device
         self.mean = args.mean
         self.stddev = args.stddev
@@ -95,8 +111,8 @@ class TrainTester(object):
         self.output_dir = args.output_dir
         self.vis_dir = os.path.join(args.output_dir,'final_vis')
         self.tensorboard_dir = os.path.join(self.log_dir,'scalar')
-#        self.aug_dir = os.path.join(args.output_dir,'aug_test')
-#        self.alpha = alpha
+        self.stats_dir = os.path.join(self.log_dir,'stats')
+
         self.minloss = {}
         self.read_view = args.read_view
         self.folding_twice = args.folding_twice
@@ -105,8 +121,8 @@ class TrainTester(object):
         Path(self.output_dir).mkdir(parents=True, exist_ok=True)
         Path(self.tensorboard_dir).mkdir(parents=True, exist_ok=True)
         Path(self.vis_dir).mkdir(parents=True, exist_ok=True)
-#        Path(self.aug_dir).mkdir(parents=True, exist_ok=True)
-        
+        Path(self.stats_dir).mkdir(parents=True, exist_ok=True)
+
         self.image_saver = plot_image_grid.NumpytoPNG(self.vis_dir)	
         self.tensorboard = args.tensorboard
         if self.tensorboard:
@@ -114,8 +130,7 @@ class TrainTester(object):
         self.checkpoint_model = args.checkpoint_model
         self.checkpoint_solver = args.checkpoint_solver
         self.testing = args.test
-#		self.minloss['testloss'] = (0, float("+inf"))
-#		self.minloss['trainloss'] = (0, float("+inf"))
+        self.if_BNstats = args.if_BNstats
 
         if self.checkpoint_model:
             print("Loading model checkpoint ...")
@@ -139,6 +154,25 @@ class TrainTester(object):
         for param_group in self.solver.param_groups:
             param_group['lr'] = lr
 
+    def hook_bn(self, hook_fn=None, mode="enable", target_block = 'G1', target_layer=["bn1"]):
+        if mode == "enable":
+            for name, layer in self.netG._modules.items():
+                if name == target_block:
+                    for name, layer in layer._modules.items():
+                        if isinstance(layer, nn.BatchNorm1d) and name in target_layer:
+                            self.hk_handles.append(layer.register_forward_hook(hook_fn))
+        elif mode == "disable":
+            for handle in self.hk_handles:
+                handle.remove()
+            self.hk_handles = []
+    
+    def save_stats(self):
+        self.stats_finecd_epochval.save(os.path.join(self.stats_dir, 'stats_finecd_epochval.npz'))
+        self.stats_finecd_itertrain.save(os.path.join(self.stats_dir, 'stats_finecd_itertrain.npz'))
+        self.stats_finecd_epochtrain.save(os.path.join(self.stats_dir, 'stats_finecd_epochtrain.npz'))
+        self.stats_finecd_epochtest.save(os.path.join(self.stats_dir, 'stats_finecd_epochtest.npz'))
+        self.stats_lr_itertrain.save(os.path.join(self.stats_dir, 'stats_lr_itertrain.npz'))
+
 
     def train(self, epoch, loader):
         # import ipdb; ipdb.set_trace()
@@ -161,7 +195,7 @@ class TrainTester(object):
             # (1) Update Image&PCG network:                   #
             ###################################################
             self.netG.zero_grad()
-            if self.model == 'foldingnet':
+            if self.model == "foldingres6" or self.model == "foldingres18":
                 ptcloud_pred_primitive, ptcloud_pred_fine, _ , _ = self.netG(image)
                 loss_ptc_fine = self.criterion_G(ptcloud_pred_fine, ptcloud)
 
@@ -170,7 +204,6 @@ class TrainTester(object):
 
                 if self.folding_twice:
                     loss_ptc_primitive = self.criterion_G(ptcloud_pred_primitive, ptcloud)
-#                    batch_primitiveCD_loss = self.lambda_loss_primitive * loss_ptc_primitive.item()
                     loss_all += self.lambda_loss_primitive * loss_ptc_primitive
 
             elif self.model == 'psgn':
@@ -234,7 +267,7 @@ class TrainTester(object):
                 Variable(ptcloud).to(self.device), \
 
             with torch.set_grad_enabled(False):
-                if self.model == 'foldingnet':
+                if self.model == "foldingres6" or self.model == "foldingres18":
                     _, ptcloud_pred_fine, codeword, _ = self.netG(image)
                 elif self.model == 'psgn':
                     ptcloud_pred_fine, codeword = self.netG(image)
@@ -248,12 +281,11 @@ class TrainTester(object):
                 code = codeword.cpu().numpy()
                 code = np.squeeze(code)
                 self.finalchamferloss.push(batch_idx, loss = loss_ptc_fine.item())
-                np.save('%s/oriptcloud_%04d.npy' % (self.vis_dir, batch_idx),pc_orig)
-                np.save('%s/fineptcloud_%04d.npy'%(self.vis_dir, batch_idx),pc2)
-                np.save('%s/codeword_%04d.npy'%(self.vis_dir, batch_idx),code)
-
+                #np.save('%s/oriptcloud_%04d.npy' % (self.vis_dir, batch_idx),pc_orig)
+                #np.save('%s/fineptcloud_%04d.npy'%(self.vis_dir, batch_idx),pc2)
+                #np.save('%s/codeword_%04d.npy'%(self.vis_dir, batch_idx),code)
                 img = image.cpu()
-                what3d_dataset.data_visualizer(pc_orig, img, type, self.vis_dir, batch_idx)
+                what3d_dataset.data_visualizer(pc_orig, pc2, img, type, self.vis_dir, batch_idx)
 #                img = img.numpy()
 #                self.image_saver.save(img)
 
@@ -277,22 +309,15 @@ class TrainTester(object):
 
         return chamfer_loss
 
-
-    def save_stats(self):
-
-        self.stats_finecd_epochval.save(os.path.join(self.log_dir, 'stats_finecd_epochval.npz'))
-        self.stats_finecd_itertrain.save(os.path.join(self.log_dir, 'stats_finecd_itertrain.npz'))
-        self.stats_finecd_epochtrain.save(os.path.join(self.log_dir, 'stats_finecd_epochtrain.npz'))
-        self.stats_finecd_epochtest.save(os.path.join(self.log_dir, 'stats_finecd_epochtest.npz'))
-        self.stats_lr_itertrain.save(os.path.join(self.log_dir, 'stats_lr_itertrain.npz'))
-
-
     def run(self, train_loader, test_loader, val_loader):
 
         self.netG.to(self.device)
         self.logger.info('Network Architecture:')
         print(str(self.netG))
         sys.stdout.flush()
+        # add a hook_fn as a member, then when epoch condition enable hook otherwise remove, 
+        # consider save it as use numpy key, 'epoch': "mean" 2x2350x512 "var"2x2350x4   
+        # torch.mean(batch)  torch.mean/max/var/min(channel)
 
         for epoch in range(1, self.total_epochs+1):
             if self.use_manifold:
@@ -307,11 +332,23 @@ class TrainTester(object):
                     type = 'val'
                 )
             else:
+#######################  BN statistics ##########################
+                if epoch in self.bn_stats_epoch and self.if_BNstats:
+                    self.hook_bn(self.bn1_stats, mode='enable',
+                                 target_block='G1', target_layer=["bn1"])
+                    self.hook_bn(self.bn6_stats, mode='enable',
+                                 target_block='G1', target_layer=["bn6"])
+########################    Train    ############################
                 new_train_loss = self.train(
                     epoch=epoch,
                     loader=train_loader,
                 )
-            
+######################## BN statistics end #######################                
+                if epoch in self.bn_stats_epoch and self.if_BNstats:
+                    self.hook_bn(mode='disable')
+                    self.bn1_stats.save(os.path.join(self.stats_dir, "epoch%d_layer_%s.npz"%(epoch,"bn1")))
+                    self.bn6_stats.save(os.path.join(self.stats_dir, "epoch%d_layer_%s.npz"%(epoch,"bn6")))
+                    
                 new_val_loss = self.test(
                     epoch=epoch,
                     loader=val_loader,
@@ -319,7 +356,6 @@ class TrainTester(object):
                 )
 
             if new_val_loss < self.val_loss:
-                #print(self.train_loss, ',', new_train_loss)
                 self.logger.info('Epoch %d saving checkpoint .... Training epoch loss %f' % (epoch, new_val_loss))
                 #self.minloss['trainloss'] = (epoch, new_train_loss)
                 # torch.save(self.netI.state_dict(), os.path.join(self.snapshot_dir, "model_image_train_best.pth"))
@@ -344,7 +380,8 @@ class TrainTester(object):
             self.lr_scheduler_G.step()
             
         self.save_stats()
-
+        plot_log(self.stats_dir, ["stats_finecd_epochval.npz", "stats_finecd_itertrain.npz",
+                                 "stats_finecd_epochtest.npz","stats_finecd_epochtrain.npz"])
         self.done = True
 
 

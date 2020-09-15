@@ -27,7 +27,7 @@ def main(args):
     
     # load data
     starter_time = time.time()
-    kwargs = {'num_workers':16, 'pin_memory':True}
+    kwargs = {'num_workers':8, 'pin_memory':True}
     print("loading train data ...")
     train_loader = torch.utils.data.DataLoader(
                 what3d_dataset_views(data_basedir=args.data_basedir, ptcloud_path=args.ptcloud_path, 
@@ -75,7 +75,7 @@ def main(args):
     elif args.model == 'psgn':
         netG = config.get_model(config.load_config(path = os.path.join(abspath, 'model/im2mesh/configs/img/psgn.yaml'),
 					default_path = os.path.join(abspath,'model/im2mesh/configs/default.yaml')), device = args.device)
-    	
+    
     #netG = torch.nn.DataParallel(netG, device_ids=[0, 1])
     logger = logging.getLogger()
     logger.info('Number of parameters={}'.format(count_parameter_num(netG.parameters())))
@@ -146,46 +146,14 @@ if __name__ == "__main__":
     parser = optparse.OptionParser(sys.argv[0], description="Training Encoder_decoder")
 
     # dataset info
-    parser.add_option("--ptcloud-path",
-                      dest="ptcloud_path", type=str,
-                      default="points_1024",
-                      help='path of the ptcloud')
-
-    parser.add_option("--img-path",
-                      dest="img_path", type=str,
-                      default='renderings',
-                      help='path of the image')
-
-    parser.add_option("--label-path",
-                      dest="label_path", type=str,
-                      default='label.npz',
-                      help='path of the image')
-    
-    parser.add_option("--data-basedir",
-                      dest="data_basedir", type=str,
-                      default='/home/../../public/zyf/What3D',
-                      help='path of the data folder') 
-
-    parser.add_option("--splits-path",
-                      dest="splits_path", type=str,
-                      default='splits',
-                      help='path of the data folder') 
-
-    parser.add_option("--class-path",
-                      dest="class_path", type=str,
-                      default='classes.txt',
-                      help="class name list")
-
-    parser.add_option("--image-size",
-                      dest="image_size", type=int,
-                      default = 224,
-                      help="image size for network")
- 
-    parser.add_option("--sample-ratio",
-                      dest="sample_ratio", type=float,
-                      default = 0.001,
-                      help="ratio to sample the dataset")
-
+    parser.add_option("--ptcloud-path", dest="ptcloud_path", type=str,   default="points_1024",                  help='path of the ptcloud')
+    parser.add_option("--img-path",     dest="img_path",     type=str,   default='renderings',                   help='path of the image')
+    parser.add_option("--label-path",   dest="label_path",   type=str,   default='label.npz',                    help='path of the image')
+    parser.add_option("--data-basedir", dest="data_basedir", type=str,   default='/home/../../public/zyf/What3D',help='path of the data folder') 
+    parser.add_option("--splits-path",  dest="splits_path",  type=str,   default='splits',help='path of the data folder') 
+    parser.add_option("--class-path",   dest="class_path",   type=str,   default='classes.txt',help="class name list")
+    parser.add_option("--image-size",   dest="image_size",   type=int,   default = 224,help="image size for network")
+    parser.add_option("--sample-ratio", dest="sample_ratio", type=float, default = 0.001,help="ratio to sample the dataset")
     parser.add_option("--views",
                       dest="views", type=str,
                       default= '0',
@@ -198,7 +166,7 @@ if __name__ == "__main__":
 
     parser.add_option("--mode",
                       dest="mode", type=str,
-                      default="viewer", 
+                      default="object", 
                       help="['viewer', 'object']")
 
     # Log file info
@@ -231,11 +199,6 @@ if __name__ == "__main__":
                      dest="test_per_n_epoch", type=int,
                      default= 1,
                      help='test per epoch')                 
-
-    parser.add_option("--shuffle-point-order", action="store_true",
-                      dest="shuffle_point_order",
-                      default=False,
-                      help="whether/how to shuffle point order (no/offline/online)")
 
     ## training parameter
     parser.add_option("--model",
@@ -369,6 +332,7 @@ if __name__ == "__main__":
                       dest="folding_twice",
                       default= False,
                       help="if folding twice", )
+    parser.add_option("--if-BNstats", action="store_true", dest="if_BNstats", default=False, help="if calculate bn stats")
     
     (args, opts) = parser.parse_args()
    

@@ -19,6 +19,20 @@ from matplotlib import pyplot as plt
 #from Tkinter import Tk
 #import tkFileDialog
 
+def plot_log(path, file_list):
+    for idx, filename in enumerate(file_list): 
+        file_path = os.path.join(path, filename)
+        label = filename[:filename.find(".")]
+        stats = np.load(file_path)
+        plt.plot(stats["iter_loss"][:,0], stats["iter_loss"][:,1],'-', label = '{}'.format(label))
+        plt.tick_params(labelsize=10)
+        plt.legend(fontsize=10)
+        plt.xlabel(label[-11:-5])
+        plt.ylabel("ChamferLoss")
+        plt.savefig(os.path.join(path, "%s.png"%label))
+        plt.close()
+
+
 def main(args):
 
 #    address_0 = 'baseline_lossplot'

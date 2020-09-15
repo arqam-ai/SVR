@@ -187,28 +187,33 @@ class what3d_dataset(Dataset):
         return sample
 
     @staticmethod
-    def data_visualizer(ptcloud, image, split_name, path, idx):
+    def data_visualizer(ptcloud, prediction, image, split_name, path, idx):
 
         fig = plt.figure(figsize=(10, 4))
-        ax = fig.add_subplot(121, projection='3d')
-        ax.scatter(ptcloud[0, :, 0], ptcloud[0, :, 1], ptcloud[0, :, 2], marker='o')
+        ax = fig.add_subplot(131, projection='3d')
+        ax.scatter(ptcloud[0, :, 0], ptcloud[0, :, 1], ptcloud[0, :, 2], s=5, alpha=0.5)
         ax.set_xlim([-1, 1])
         ax.set_ylim([-1, 1])
         ax.set_zlim([-1, 1])
-        ax.set_xlabel('X-axis')
-        ax.set_ylabel('Y-axis')
-        ax.set_zlabel('Z-axis')
-        ax = fig.add_subplot(122)
+        plt.axis("off")
+        ax = fig.add_subplot(132, projection='3d')
+        ax.scatter(prediction[0, :, 0], prediction[0, :, 1], prediction[0, :, 2], s=5, alpha=0.5)
+        ax.set_xlim([-1, 1])
+        ax.set_ylim([-1, 1])
+        ax.set_zlim([-1, 1])
+        plt.axis("off")
+        ax = fig.add_subplot(133)
         image = image[0].transpose(0,1)
         image = image.transpose(1,2)
         ax.imshow(image)
+        plt.axis("off")
         #index = np.argmax(label)
         #print(index)
         #class_list,_ = class_counter(os.path.join('../../../What3D', 'splits', 'classes.txt'))
         #class_name = class_list[index]
         #ax.set_title('%s'%class_name,fontsize=12,color='r')
         title = os.path.join(path, "%s_%d" % (split_name,idx))
-        fig.savefig(title)
+        fig.savefig(title, bbox_inches='tight',pad_inches = 0, dpi = 200)
         plt.close()
 
 
@@ -254,7 +259,6 @@ class what3d_dataset_views(Dataset):
         elif self.mode == 'object':
             ptcloud_path = ptcloud_path[:-5] + '%s.npz'%"object"
             self.data_ptcloud = np.load(os.path.join(data_basedir, ptcloud_path))[split_name]
-            self.ptcloud_num = self.data_ptcloud.shape[0]
         ## if sample ratio < 1.0, then sample the path list 
         total_instance_num = len(image_path_list)
         
@@ -263,9 +267,15 @@ class what3d_dataset_views(Dataset):
             ## Sample the instance path 
             sample_index = random.sample(range(total_instance_num), sampled_instance_num)
             image_path_list = [image_path_list[index] for index in sample_index]
-            self.data_ptcloud = self.data_ptcloud[what3d_dataset_views.ptcloud_index(sample_index, total_instance_num, len(views))]
+            if self.mode == 'viewer':
+                self.data_ptcloud = self.data_ptcloud[what3d_dataset_views.ptcloud_index(sample_index, total_instance_num, len(views))]
+            elif self.mode == 'object':
+                self.data_ptcloud = self.data_ptcloud[sample_index]
+                self.ptcloud_num = self.data_ptcloud.shape[0]
         else:
             sampled_instance_num = total_instance_num
+            self.ptcloud_num = self.data_ptcloud.shape[0]
+
         self.instance_num = len(views) * sampled_instance_num
 
         self.convertor = transforms.ToPILImage()
@@ -325,13 +335,14 @@ def validtion(args):
     multiview_index = what3d_dataset_views.ptcloud_index(index, offset=instance_num, view_num=5)
     for batch_idx, batch in enumerate(train_loader):
         if batch_idx in multiview_index:
-            what3d_dataset.data_visualizer(batch['ptcloud'], batch['image'], 'val', "../img/dataset/test", batch_idx)
+            what3d_dataset.data_visualizer(batch['ptcloud'], batch['ptcloud'], batch['image'], 'val', "../img/dataset/test", batch_idx)
         pbar.update(1)
 
 
 
 def main(args):
     test_type = 'train'
+    '''
     kwargs = {'num_workers':16, 'pin_memory':True}
     train_loader = torch.utils.data.DataLoader(
                 what3d_dataset_views(data_basedir=args.data_basedir, ptcloud_path=args.ptcloud_path, 
@@ -342,7 +353,17 @@ def main(args):
                 views=list(args.views), read_view=args.read_view,
                 points_num = args.pts_num, mode = args.mode),
                 batch_size=args.train_batch_size, shuffle=False,**kwargs)
-    
+    '''
+
+    dataset = what3d_dataset_views(data_basedir=args.data_basedir, ptcloud_path=args.ptcloud_path, 
+                img_path=args.img_path, label_path=args.label_path, 
+                splits_path=args.splits_path, split_name=test_type, 
+                class_path=args.class_path, sample_ratio=args.sample_ratio,
+                image_height=args.image_size, image_width=args.image_size, 
+                views=list(args.views), read_view=args.read_view,
+                points_num = args.pts_num, mode = args.mode)
+
+    '''
     pbar = tqdm.tqdm(total = len(train_loader), desc = 'batch')
     instance_num = int(len(train_loader)/5) 
     #print(instance_num)
@@ -352,7 +373,7 @@ def main(args):
         if batch_idx in multiview_index:
             what3d_dataset.data_visualizer(batch['ptcloud'], batch['image'], test_type, "../img/dataset/test/object", batch_idx)
         pbar.update(1)
-    
+    '''
     
         
 

@@ -67,8 +67,8 @@ class GeneratorRes6(nn.Module):
 
 class GeneratorRes18(nn.Module):
     def __init__(self, width, codelength, input_dim = 2):
-        
-        super(GeneratorRes16, self).__init__()
+
+        super(GeneratorRes18, self).__init__()
         self.input_layer = PointwiseMLP([input_dim+codelength, width], doLastRelu=True)
         self.layer1 = PointwiseMLP([width, width], doLastRelu=True)
         self.layer2 = PointwiseMLP([width, width], doLastRelu=True)
