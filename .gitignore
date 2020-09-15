@@ -19,3 +19,5 @@
 **/what3d_clusters/*.zip
 **/img/*.png
 **/*.zip
+**/*.npz
+
