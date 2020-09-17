@@ -1,15 +1,18 @@
 #!/bin/bash
-echo "When using the provided data make sure to respect the shapenet [license](https://shapenet.org/terms)."
-function gdrive_download() {
+function gdrive_download () {
   CONFIRM=$(wget --quiet --save-cookies /tmp/cookies.txt --keep-session-cookies --no-check-certificate "https://docs.google.com/uc?export=download&id=$1" -O- | sed -rn 's/.*confirm=([0-9A-Za-z_]+).*/\1\n/p')
   wget --load-cookies /tmp/cookies.txt "https://docs.google.com/uc?export=download&confirm=$CONFIRM&id=$1" -O $2
   rm -rf /tmp/cookies.txt
 }
-#cd dataset
-gdrive_download 153nd1oUd5ONnP8AoXaU8IZunskd5LEvB data/ShapeNetV1Renderings.zip
-#gdrive_download 1wS5B7k2rKB5JsvNKfjs9aOjv3-FQiOEF data/ShapeNetV1Renderings.zip
-#cd data
-#unzip ShapeNetV1Renderings.zip
-#rm ShapeNetV1Renderings.zip
-#cd ..
-#cd ..
+mkdir What3D
+wget https://lmb.informatik.uni-freiburg.de/data/what3d/renderings.zip -O What3D/renderings.zip
+gdrive_download 1UNh7ySRQsZ8qysz_GB9zP9ruskZLje2B What3D/splits.zip
+gdrive_download 1wS5B7k2rKB5JsvNKfjs9aOjv3-FQiOEF What3D/ptcloud_object.npz
+gdrive_download 1Rw0S0j-I5bsi44zQtw8J1DsI8JiiuIEY What3D/label.npz
+cd What3D
+unzip renderings.zip
+rm renderings.zip
+unzip splits.zip
+rm splits.zip
+cd ..
+mv What3D ../
