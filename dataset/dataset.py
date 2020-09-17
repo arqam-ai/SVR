@@ -5,7 +5,6 @@ author : Yefan
 created : 8/9/19 10:21PM
 '''
 import sys
-import open3d as o3d
 from torch.utils.data import Dataset
 import torch
 import argparse
