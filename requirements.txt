@@ -1,4 +1,3 @@
-errno
 opencv-python
 logging
 argparse
