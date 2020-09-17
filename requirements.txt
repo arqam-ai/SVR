@@ -2,6 +2,7 @@ opencv-python
 argparse
 yaml
 numpy
+pyyaml
 matplotlib
 matplotlib-base
 scikit-image
