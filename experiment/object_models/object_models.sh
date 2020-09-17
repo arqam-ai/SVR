@@ -1,5 +1,5 @@
 # Mutual Parameter
-SAMPLERATIO=1.0                        # ratio to sample the dataset
+SAMPLERATIO=1.0                         # ratio to sample the dataset
 EPOCH=70                               # total epoch for training 
 TRAINBATCH=64                          # training batch size 
 TESTBATCH=200                          # test batch size 
@@ -42,13 +42,13 @@ CUDA_VISIBLE_DEVICES=$CUDA1 python ../../train.py --data-basedir '../../../What3
 						  --momentum $MOMENTUM \
 						  --weight-decay $WEIGHTDECAY \
 						  --lr_decay_step $DECAYSTEP \
-						  --train \
-						  --test \
 						  --tensorboard \
 						  --folding-twice \
 						  --if-BNstats \
 						  --bnstats-step $BNSTATS_STEP \
-						  --save-results &
+						  --save-results \
+						  --test \
+						  --train
 
 ## FoldingNet with 6 layer fc decoder only ONE-folding(loss backward)  
 CUDA_VISIBLE_DEVICES=$CUDA2 python ../../train.py --data-basedir '../../../What3D' \
@@ -72,12 +72,12 @@ CUDA_VISIBLE_DEVICES=$CUDA2 python ../../train.py --data-basedir '../../../What3
 						  --momentum $MOMENTUM \
 						  --weight-decay $WEIGHTDECAY \
 						  --lr_decay_step $DECAYSTEP \
-						  --train \
-						  --test \
 						  --tensorboard \
 						  --if-BNstats \
 						  --bnstats-step $BNSTATS_STEP \
-						  --save-results &
+						  --save-results \
+						  --test \
+						  --train 
 
 ## FoldingNet with 18 layer fc decoder only ONE-folding  
 CUDA_VISIBLE_DEVICES=$CUDA3 python ../../train.py --data-basedir '../../../What3D' \
@@ -101,12 +101,12 @@ CUDA_VISIBLE_DEVICES=$CUDA3 python ../../train.py --data-basedir '../../../What3
 						  --momentum $MOMENTUM \
 						  --weight-decay $WEIGHTDECAY \
 						  --lr_decay_step $DECAYSTEP \
-						  --train \
-						  --test \
 						  --tensorboard \
 						  --if-BNstats \
 						  --bnstats-step $BNSTATS_STEP \
-						  --save-results &
+						  --save-results \
+						  --test \
+						  --train
 
 ## PSGN Haoqiang Fan 
 CUDA_VISIBLE_DEVICES=$CUDA4 python ../../train.py --data-basedir '../../../What3D' \
@@ -130,11 +130,11 @@ CUDA_VISIBLE_DEVICES=$CUDA4 python ../../train.py --data-basedir '../../../What3
 						  --momentum $MOMENTUM \
 						  --weight-decay $WEIGHTDECAY \
 						  --lr_decay_step $DECAYSTEP \
-						  --test \
 						  --tensorboard \
 						  --save-results \
-						  --train &
-
+						  --test \
+						  --train 
+## AtlasNet 4 patches
 CUDA_VISIBLE_DEVICES=$CUDA5 python ../../train.py --data-basedir '../../../What3D' \
 						  --ptcloud-path "ptcloud_n.npz" \
 						  --model "atlasnet" \
@@ -156,8 +156,9 @@ CUDA_VISIBLE_DEVICES=$CUDA5 python ../../train.py --data-basedir '../../../What3
 						  --momentum $MOMENTUM \
 						  --weight-decay $WEIGHTDECAY \
 						  --lr_decay_step $DECAYSTEP \
-						  --train \
-						  --test \
 						  --tensorboard \
-						  --save-results &
+						  --save-results \
+						  --test \
+						  --train 
+						  
 

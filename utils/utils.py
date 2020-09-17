@@ -68,6 +68,11 @@ def init_weights(net, init_type="kaiming", init_gain=0.02):
 	print('initialize network with %s' % init_type)
 	net.apply(init_func)  # apply the initialization function <init_funce
 
+def check_exist_or_mkdirs(path):
+    '''thread-safe mkdirs if not exist'''
+    
+    if not os.path.exists(path):
+        os.makedirs(path)
 
 
 

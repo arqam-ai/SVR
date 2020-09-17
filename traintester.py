@@ -57,7 +57,6 @@ class TrainTester(object):
         self.model = args.model
         self.criterion_G = criterion_G
         self.criterion_C = criterion_C
-        self.criterion_M = criterion_M
         self.optimizer_G = optmizer_G
         self.logger = logger
         self.lr_scheduler_G = lr_scheduler_G
@@ -301,7 +300,8 @@ class TrainTester(object):
             self.stats_finecd_itertest.push(self.train_iter, loss=chamfer_loss)
             self.stats_finecd_epochtest.push(epoch, loss = chamfer_loss)
             self.writer.add_scalar('Loss/test', chamfer_loss, epoch)
-
+            plot_log(self.stats_dir, ["stats_finecd_epochval.npz", "stats_finecd_itertrain.npz",
+                    "stats_finecd_epochtest.npz","stats_finecd_epochtrain.npz"])
         elif type == 'val':
             self.stats_finecd_epochval.push(epoch, loss = chamfer_loss)
             self.writer.add_scalar('Loss/val', chamfer_loss, epoch)
@@ -382,8 +382,6 @@ class TrainTester(object):
             self.lr_scheduler_G.step()
             
         self.save_stats()
-        plot_log(self.stats_dir, ["stats_finecd_epochval.npz", "stats_finecd_itertrain.npz",
-                                 "stats_finecd_epochtest.npz","stats_finecd_epochtrain.npz"])
         self.done = True
 
 

@@ -90,6 +90,7 @@ def main(args):
         netG = EncoderDecoder(opt)
 
     #netG = torch.nn.DataParallel(netG, device_ids=[0, 1])
+    netG.to(args.device)
     logger.info('Number of parameters={}'.format(count_parameter_num(netG.parameters())))
     logger.info(args)
 
