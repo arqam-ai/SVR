@@ -3,3 +3,11 @@ logging
 argparse
 time
 yaml
+numpy=1.15.4
+matplotlib=3.0.3
+matplotlib-base=3.0.3
+scikit-image=0.14.1
+scipy=1.1.0
+tensorboardx=1.4
+tqdm=4.28.1
+trimesh=2.37.7
