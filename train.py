@@ -26,7 +26,16 @@ abspath = os.path.dirname(os.path.abspath(__file__))
 
 
 def main(args):
+
+    check_exist_or_mkdirs(args.log_dir)
     logger = logging.getLogger()
+    file_log_handler = logging.FileHandler(os.path.join(args.log_dir,args.log_filename))
+    logger.addHandler(file_log_handler)
+    logger.setLevel('INFO')
+    formatter = logging.Formatter()
+    file_log_handler.setFormatter(formatter)
+
+
     # load data
     starter_time = time.time()
     kwargs = {'num_workers':8, 'pin_memory':True}
@@ -78,26 +87,18 @@ def main(args):
     elif args.model == 'psgn':
         netG = config.get_model(config.load_config(path = os.path.join(abspath, 'model/im2mesh/configs/img/psgn.yaml'),
 					default_path = os.path.join(abspath,'model/im2mesh/configs/default.yaml')), device = args.device)
+
     elif args.model == 'atlasnet':
         opt = atlas_parser(logger)
         netG = EncoderDecoder(opt)
-    #netG = torch.nn.DataParallel(netG, device_ids=[0, 1])
-    
-    logger.info('Number of parameters={}'.format(count_parameter_num(netG.parameters())))
-    check_exist_or_mkdirs(args.log_dir)
-    file_log_handler = logging.FileHandler(os.path.join(args.log_dir,args.log_filename))
-    logger.addHandler(file_log_handler)
 
-    logger.setLevel('INFO')
-    formatter = logging.Formatter()
-    file_log_handler.setFormatter(formatter)
-    #stderr_log_handler.setFormatter(formatter)
+    #netG = torch.nn.DataParallel(netG, device_ids=[0, 1])
+    logger.info('Number of parameters={}'.format(count_parameter_num(netG.parameters())))
     logger.info(args)
 
     # set solver and loss function
     criterion_G = ChamferDistance().to(args.device)
     criterion_C = torch.nn.CrossEntropyLoss().to(args.device)
-    criterion_M = torch.nn.MSELoss(reduction='mean')
 
     optmizer_G = torch.optim.Adam(
         netG.parameters(),
@@ -118,7 +119,6 @@ def main(args):
             netG=netG,
             criterion_G=criterion_G,
             criterion_C=criterion_C,
-            criterion_M=criterion_M,
             optmizer_G=optmizer_G,
             lr_scheduler_G=lr_scheduler_G,
             alpha = args.alpha,
@@ -159,15 +159,8 @@ if __name__ == "__main__":
     parser.add_option("--class-path",   dest="class_path",   type=str,   default='classes.txt',help="class name list")
     parser.add_option("--image-size",   dest="image_size",   type=int,   default = 224,help="image size for network")
     parser.add_option("--sample-ratio", dest="sample_ratio", type=float, default = 0.001,help="ratio to sample the dataset")
-    parser.add_option("--views",
-                      dest="views", type=str,
-                      default= '0',
-                      help="five view for each instance")
-
-    parser.add_option("--pts-num",
-                      dest="pts_num", type=int,
-                      default=1024,
-                      help="number of points in a ptcloud")
+    parser.add_option("--views",dest="views", type=str,default= '0',help="five view for each instance")
+    parser.add_option("--pts-num",dest="pts_num", type=int,default=1024,help="number of points in a ptcloud")
 
     parser.add_option("--mode",
                       dest="mode", type=str,

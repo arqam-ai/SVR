@@ -53,7 +53,7 @@ class BN_Stats(object):
 
 class TrainTester(object):
 
-    def __init__(self, netG, criterion_G,  criterion_C, criterion_M, optmizer_G, lr_scheduler_G, alpha, logger, args):
+    def __init__(self, netG, criterion_G,  criterion_C, optmizer_G, lr_scheduler_G, alpha, logger, args):
         self.netG= netG
         self.model = args.model
         self.criterion_G = criterion_G
@@ -69,14 +69,6 @@ class TrainTester(object):
         self.test_per_n_epoch = args.test_per_n_epoch
         self.done = False
         self.train_iter = 0
-        #self.stats_train_batch = Stats()
-        #self.stats_train_running = Stats()
-#		self.stats_class_itertrain = Stats()
-#		self.stats_class_epochval = Stats()
-#		self.stats_class_epochtest = Stats()
-#		self.stats_class_epochtrain = Stats()
-#		self.stats_classacc_epochtest = Stats()
-#		self.stats_classacc_epochval = Stats()
 
         self.stats_finecd_itertrain = Stats()  
         self.stats_finecd_epochtrain = Stats()
@@ -314,6 +306,8 @@ class TrainTester(object):
         elif type == 'val':
             self.stats_finecd_epochval.push(epoch, loss = chamfer_loss)
             self.writer.add_scalar('Loss/val', chamfer_loss, epoch)
+            plot_log(self.stats_dir, ["stats_finecd_epochval.npz", "stats_finecd_itertrain.npz",
+                    "stats_finecd_epochtest.npz","stats_finecd_epochtrain.npz"])
         self.logger.info('{} set (epoch={:<3d}): AverageLoss={:.6f}: ChamferLoss={:.6f}: '.format(type, epoch, test_loss, chamfer_loss))
 
         return chamfer_loss
@@ -371,7 +365,7 @@ class TrainTester(object):
                 torch.save(self.netG.state_dict(), os.path.join(self.snapshot_dir, "model_train_best.pth"))
                 torch.save(self.optimizer_G.state_dict(), os.path.join(self.snapshot_dir,"solver_train_best.pth"))
                 self.val_loss = new_val_loss
-            if epoch % self.test_per_n_epoch == 0:
+            if epoch % self.test_per_n_epoch == 0 or epoch == 1:
                 if self.use_manifold:
                     self.manifold_test(
                         epoch=epoch,

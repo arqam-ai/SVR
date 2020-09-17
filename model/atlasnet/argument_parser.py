@@ -165,55 +165,6 @@ def parser(logger):
     now = datetime.datetime.now()
     opt = EasyDict(opt.__dict__)
 
-    #if opt.dir_name == "":
-        # Create default dirname
-    #    opt.dir_name = join('log', opt.id + now.isoformat())
-
-
-    # If running a demo, check if input is an image or a pointcloud
-    #if opt.demo:
-    #    ext = opt.demo_input_path.split('.')[-1]
-    #    if ext == "ply" or ext == "npy" or ext == "obj":
-    #        opt.SVR = False
-    #    elif ext == "png":
-    #        opt.SVR = True
-
-    #if opt.demo or opt.run_single_eval:
-    #    if not exists("./training/trained_models/atlasnet_singleview_25_squares/network.pth"):
-    #        print("Dowload Trained Models.")
-    #        os.system("chmod +x training/download_trained_models.sh")
-    #        os.system("./training/download_trained_models.sh")
-
-    #    if opt.reload_model_path == "" and opt.SVR:
-    #        opt.dir_name = "./training/trained_models/atlasnet_singleview_1_sphere"
-    #    elif opt.reload_model_path == "" and not opt.SVR:
-    #        opt.dir_name = "./training/trained_models/atlasnet_autoencoder_1_sphere"
-
-    '''
-    if exists(join(opt.dir_name, "options.json")):
-        # Reload parameters from options.txt if it exists
-        with open(join(opt.dir_name, "options.json"), 'r') as f:
-            my_opt_dict = json.load(f)
-        my_opt_dict.pop("run_single_eval")
-        my_opt_dict.pop("no_metro")
-        my_opt_dict.pop("train_only_encoder")
-        my_opt_dict.pop("no_learning")
-        my_opt_dict.pop("demo")
-        my_opt_dict.pop("demo_input_path")
-        my_opt_dict.pop("dir_name")
-        for key in my_opt_dict.keys():
-            opt[key] = my_opt_dict[key]
-        if not opt.demo:
-            print("Modifying input arguments to match network in dirname")
-            my_utils.cyan_print("PARAMETER: ")
-            for a in my_opt_dict:
-                print(
-                    "         "
-                    + colored(a, "yellow")
-                    + " : "
-                    + colored(str(my_opt_dict[a]), "cyan")
-                )
-    '''
     # Hard code dimension of the template.
     dim_template_dict = {
         "SQUARE": 2,

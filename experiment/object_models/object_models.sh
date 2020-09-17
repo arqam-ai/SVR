@@ -11,16 +11,17 @@ MOMENTUM=0.9                           # momentum
 DECAYSTEP=30                           # learning decay step 
 WEIGHTDECAY=1e-6                       # weight decay
 BNSTATS_STEP=20                        # step to do batch norm stats
+TEST_STEP=30                           # step to do test
 # CUDA 
 CUDA1=0                                # gpu id for model1 
 CUDA2=0                                # gpu id for model2 
 CUDA3=1                                # gpu id for model3 
 CUDA4=1                                # gpu id for model4 
 CUDA5=1                                # gpu id for model5
-'''
+
 ## FoldingNet with 6 layer fc decoder two-folding(loss backward)  (submission for ECCV2020)
 CUDA_VISIBLE_DEVICES=$CUDA1 python ../../train.py --data-basedir '../../../What3D' \
-						  --ptcloud-path "ptcloud_0.npz" \
+						  --ptcloud-path "ptcloud_n.npz" \
 						  --model "foldingres6" \
 						  --image-size 224 \
 						  --view $VIEWS \
@@ -30,7 +31,7 @@ CUDA_VISIBLE_DEVICES=$CUDA1 python ../../train.py --data-basedir '../../../What3
 						  --test-batch-size $TESTBATCH \
 						  --val-batch-size $VALBATCH \
 						  --verbose_per_n_batch 50 \
-						  --test_per_n_epoch 5 \
+						  --test_per_n_epoch $TEST_STEP \
 						  --lambda-loss-fine 1. \
 						  --lambda-loss-primitive 1. \
 						  --mode $MODE \
@@ -51,7 +52,7 @@ CUDA_VISIBLE_DEVICES=$CUDA1 python ../../train.py --data-basedir '../../../What3
 
 ## FoldingNet with 6 layer fc decoder only ONE-folding(loss backward)  
 CUDA_VISIBLE_DEVICES=$CUDA2 python ../../train.py --data-basedir '../../../What3D' \
-						  --ptcloud-path "ptcloud_0.npz" \
+						  --ptcloud-path "ptcloud_n.npz" \
 						  --model "foldingres6" \
 						  --image-size 224 \
 						  --view $VIEWS \
@@ -61,9 +62,8 @@ CUDA_VISIBLE_DEVICES=$CUDA2 python ../../train.py --data-basedir '../../../What3
 						  --test-batch-size $TESTBATCH \
 						  --val-batch-size $VALBATCH \
 						  --verbose_per_n_batch 50 \
-						  --test_per_n_epoch 5 \
+						  --test_per_n_epoch $TEST_STEP \
 						  --lambda-loss-fine 1. \
-						  --lambda-loss-primitive 1. \
 						  --mode $MODE \
 						  --output-dir 'foldingres6/' \
 						  --snapshot-dir 'foldingres6/' \
@@ -81,7 +81,7 @@ CUDA_VISIBLE_DEVICES=$CUDA2 python ../../train.py --data-basedir '../../../What3
 
 ## FoldingNet with 18 layer fc decoder only ONE-folding  
 CUDA_VISIBLE_DEVICES=$CUDA3 python ../../train.py --data-basedir '../../../What3D' \
-						  --ptcloud-path "ptcloud_0.npz" \
+						  --ptcloud-path "ptcloud_n.npz" \
 						  --model "foldingres18" \
 						  --image-size 224 \
 						  --view $VIEWS \
@@ -91,9 +91,8 @@ CUDA_VISIBLE_DEVICES=$CUDA3 python ../../train.py --data-basedir '../../../What3
 						  --test-batch-size $TESTBATCH \
 						  --val-batch-size $VALBATCH \
 						  --verbose_per_n_batch 50 \
-						  --test_per_n_epoch 5 \
+						  --test_per_n_epoch $TEST_STEP \
 						  --lambda-loss-fine 1. \
-						  --lambda-loss-primitive 1. \
 						  --mode $MODE \
 						  --output-dir 'foldingres18/' \
 						  --snapshot-dir 'foldingres18/' \
@@ -111,7 +110,7 @@ CUDA_VISIBLE_DEVICES=$CUDA3 python ../../train.py --data-basedir '../../../What3
 
 ## PSGN Haoqiang Fan 
 CUDA_VISIBLE_DEVICES=$CUDA4 python ../../train.py --data-basedir '../../../What3D' \
-						  --ptcloud-path "ptcloud_0.npz" \
+						  --ptcloud-path "ptcloud_n.npz" \
 						  --model "psgn" \
 						  --image-size 224 \
 						  --view $VIEWS \
@@ -121,9 +120,8 @@ CUDA_VISIBLE_DEVICES=$CUDA4 python ../../train.py --data-basedir '../../../What3
 						  --test-batch-size $TESTBATCH \
 						  --val-batch-size $VALBATCH \
 						  --verbose_per_n_batch 50 \
-						  --test_per_n_epoch 5 \
+						  --test_per_n_epoch $TEST_STEP \
 						  --lambda-loss-fine 1. \
-						  --lambda-loss-primitive 1. \
 						  --mode $MODE \
 						  --output-dir 'psgn/' \
 						  --snapshot-dir 'psgn/' \
@@ -132,13 +130,13 @@ CUDA_VISIBLE_DEVICES=$CUDA4 python ../../train.py --data-basedir '../../../What3
 						  --momentum $MOMENTUM \
 						  --weight-decay $WEIGHTDECAY \
 						  --lr_decay_step $DECAYSTEP \
-						  --train \
 						  --test \
 						  --tensorboard \
-						  --save-results &
-'''
+						  --save-results \
+						  --train &
+
 CUDA_VISIBLE_DEVICES=$CUDA5 python ../../train.py --data-basedir '../../../What3D' \
-						  --ptcloud-path "ptcloud_0.npz" \
+						  --ptcloud-path "ptcloud_n.npz" \
 						  --model "atlasnet" \
 						  --image-size 224 \
 						  --view $VIEWS \
@@ -148,9 +146,8 @@ CUDA_VISIBLE_DEVICES=$CUDA5 python ../../train.py --data-basedir '../../../What3
 						  --test-batch-size $TESTBATCH \
 						  --val-batch-size $VALBATCH \
 						  --verbose_per_n_batch 50 \
-						  --test_per_n_epoch 5 \
+						  --test_per_n_epoch $TEST_STEP \
 						  --lambda-loss-fine 1. \
-						  --lambda-loss-primitive 1. \
 						  --mode $MODE \
 						  --output-dir 'atlasnet/' \
 						  --snapshot-dir 'atlasnet/' \
@@ -162,5 +159,5 @@ CUDA_VISIBLE_DEVICES=$CUDA5 python ../../train.py --data-basedir '../../../What3
 						  --train \
 						  --test \
 						  --tensorboard \
-						  --save-results 
+						  --save-results &
 
