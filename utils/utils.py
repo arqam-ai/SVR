@@ -1,7 +1,6 @@
 import os
 import sys
 import argparse
-import errno
 import numpy as np
 from matplotlib import pyplot as plt
 from mpl_toolkits.mplot3d import axes3d, proj3d
@@ -69,14 +68,7 @@ def init_weights(net, init_type="kaiming", init_gain=0.02):
 	print('initialize network with %s' % init_type)
 	net.apply(init_func)  # apply the initialization function <init_funce
 
-def check_exist_or_mkdirs(path):
-    '''thread-safe mkdirs if not exist'''
-    try:
-        if not os.path.exists(path):
-            os.makedirs(path)
-    except OSError as e:
-        if e.errno != errno.EEXIST:
-            raise
+
 
 
 def vis_pts(pts, clr, cmap):

@@ -64,12 +64,10 @@ def draw_pts(pts, clr, cmap, ax=None,sz=20):
 
 def check_exist_or_mkdirs(path):
     '''thread-safe mkdirs if not exist'''
-    try:
-        if not os.path.exists(path):
-            os.makedirs(path)
-    except OSError as e:
-        if e.errno != errno.EEXIST:
-            raise
+    
+    if not os.path.exists(path):
+        os.makedirs(path)
+
 		
 def create_ptcloud_folder():
 

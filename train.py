@@ -145,7 +145,7 @@ def main(args):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()(sys.argv[0], description="Training Encoder_decoder")
+    parser = argparse.ArgumentParser()
 
     # dataset info
     parser.add_argument("--ptcloud-path", dest="ptcloud_path", type=str,   default="ptcloud_0.npz",                  help='path of the ptcloud')
@@ -291,15 +291,13 @@ if __name__ == "__main__":
                       dest="tensorboard",
                       default= None) 
 
-    parser.add_argument("--checkpoint-model", type="str",
+    parser.add_argument("--checkpoint-model", type=str,
                       dest="checkpoint_model",
-                      #default= "snapshots/model_train_best.pth",
                       default= None,
                       help="Path to pretrained model G net")
 
-    parser.add_argument("--checkpoint-solver", type="str",
+    parser.add_argument("--checkpoint-solver", type=str,
                       dest="checkpoint_solver",
-                      #default= "snapshots/solver_train_best.pth",
                       default= None,
                       help="Path to pretrained solver")
 

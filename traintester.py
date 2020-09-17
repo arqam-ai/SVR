@@ -1,6 +1,5 @@
 import os
 import sys
-import glog as logger
 import numpy as np
 import math
 import matplotlib

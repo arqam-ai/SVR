@@ -3,7 +3,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 import csv
-from utils.PyTorchEMD.emd import earth_mover_distance
+#from utils.PyTorchEMD.emd import earth_mover_distance
 # Define Chamfer Loss
 #from pytorch3d.loss import chamfer_distance
 #import utils.ChamferDistancePytorch.chamfer3D.dist_chamfer_3D as dist_chamfer_3D

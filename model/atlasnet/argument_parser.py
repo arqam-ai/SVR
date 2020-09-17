@@ -2,7 +2,6 @@ import argparse
 import os
 import datetime
 import json
-from termcolor import colored
 from easydict import EasyDict
 from os.path import exists, join
 import torch
