@@ -17,10 +17,11 @@ dependencies:
   - tqdm=4.28.1
   - trimesh=2.37.7
   - argparse
-  - logging
   - time
   - tqdm
-  - errno
-  - opencv-python
   - yaml
+  - pip:
+    - opencv-python
+    - errno
+    - logging
 
