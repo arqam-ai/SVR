@@ -1,6 +1,5 @@
 pip install opencv-python \
             argparse \
-            time \
             yaml \
             numpy \
             matplotlib \
