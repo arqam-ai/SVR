@@ -16,12 +16,11 @@ dependencies:
   - torchvision=0.2.1
   - tqdm=4.28.1
   - trimesh=2.37.7
-  - argparse
-  - time
-  - tqdm
-  - yaml
+  - opencv-python
   - pip:
-    - opencv-python
     - errno
     - logging
+    - argparse
+    - time
+    - yaml
 
