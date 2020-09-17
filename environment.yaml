@@ -17,10 +17,6 @@ dependencies:
   - tqdm=4.28.1
   - trimesh=2.37.7
   - pip=20.2.3
-  - logging
-  - argparse
-  - time
-  - yaml
 
     
     
