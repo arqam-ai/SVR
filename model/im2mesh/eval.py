@@ -3,9 +3,9 @@ import logging
 import numpy as np
 import trimesh
 # from scipy.spatial import cKDTree
-from im2mesh.utils.libkdtree import KDTree
-from im2mesh.utils.libmesh import check_mesh_contains
-from im2mesh.common import compute_iou
+from model.im2mesh.utils.libkdtree import KDTree
+from model.im2mesh.utils.libmesh import check_mesh_contains
+from model.im2mesh.common import compute_iou
 
 
 # Maximum values for bounding box [-0.5, 0.5]^3

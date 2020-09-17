@@ -15,6 +15,8 @@ import optparse
 import time
 from dataset.dataset import what3d_dataset_views
 from model.generator_res_Folding import GeneratorVanilla
+from model.atlasnet.model import EncoderDecoder
+from model.atlasnet.argument_parser import parser as atlas_parser
 from utils.utils import count_parameter_num, init_weights, check_exist_or_mkdirs
 from utils.loss import ChamferDistance
 from traintester import TrainTester
@@ -24,11 +26,11 @@ abspath = os.path.dirname(os.path.abspath(__file__))
 
 
 def main(args):
-    
+    logger = logging.getLogger()
     # load data
     starter_time = time.time()
     kwargs = {'num_workers':8, 'pin_memory':True}
-    print("loading train data ...")
+    logger.info("loading train data ...")
     train_loader = torch.utils.data.DataLoader(
                 what3d_dataset_views(data_basedir=args.data_basedir, ptcloud_path=args.ptcloud_path, 
                 img_path=args.img_path, label_path=args.label_path, 
@@ -38,7 +40,7 @@ def main(args):
                 views=list(args.views), read_view=args.read_view,
                 points_num = args.pts_num, mode = args.mode),
                 batch_size=args.train_batch_size, shuffle=True,**kwargs)
-    print("loading test data ...")
+    logger.info("loading test data ...")
     test_loader = torch.utils.data.DataLoader(
                         what3d_dataset_views(data_basedir=args.data_basedir, ptcloud_path=args.ptcloud_path, 
                 img_path=args.img_path, label_path=args.label_path, 
@@ -49,7 +51,7 @@ def main(args):
                 points_num=args.pts_num, mode=args.mode),
                 batch_size=args.test_batch_size, shuffle=False,**kwargs)
 
-    print("loading val data ...")
+    logger.info("loading val data ...")
     val_loader = torch.utils.data.DataLoader(
                         what3d_dataset_views(data_basedir=args.data_basedir, ptcloud_path=args.ptcloud_path, 
                 img_path=args.img_path, label_path=args.label_path, 
@@ -59,8 +61,9 @@ def main(args):
                 views=list(args.views), read_view=args.read_view,
                 points_num=args.pts_num, mode = args.mode),
                 batch_size=args.val_batch_size, shuffle=False,**kwargs)
-    print("Initialize cache={}".format(time.time()-starter_time))
+    logger.info("Initialize cache={}".format(time.time()-starter_time))
 
+    
     if args.model == "foldingres6" or args.model == "foldingres18":
         netG = GeneratorVanilla(
             grid_dims=(32,32,1),
@@ -75,9 +78,11 @@ def main(args):
     elif args.model == 'psgn':
         netG = config.get_model(config.load_config(path = os.path.join(abspath, 'model/im2mesh/configs/img/psgn.yaml'),
 					default_path = os.path.join(abspath,'model/im2mesh/configs/default.yaml')), device = args.device)
-    
+    elif args.model == 'atlasnet':
+        opt = atlas_parser(logger)
+        netG = EncoderDecoder(opt)
     #netG = torch.nn.DataParallel(netG, device_ids=[0, 1])
-    logger = logging.getLogger()
+    
     logger.info('Number of parameters={}'.format(count_parameter_num(netG.parameters())))
     check_exist_or_mkdirs(args.log_dir)
     file_log_handler = logging.FileHandler(os.path.join(args.log_dir,args.log_filename))
@@ -146,7 +151,7 @@ if __name__ == "__main__":
     parser = optparse.OptionParser(sys.argv[0], description="Training Encoder_decoder")
 
     # dataset info
-    parser.add_option("--ptcloud-path", dest="ptcloud_path", type=str,   default="points_1024",                  help='path of the ptcloud')
+    parser.add_option("--ptcloud-path", dest="ptcloud_path", type=str,   default="ptcloud_0.npz",                  help='path of the ptcloud')
     parser.add_option("--img-path",     dest="img_path",     type=str,   default='renderings',                   help='path of the image')
     parser.add_option("--label-path",   dest="label_path",   type=str,   default='label.npz',                    help='path of the image')
     parser.add_option("--data-basedir", dest="data_basedir", type=str,   default='/home/../../public/zyf/What3D',help='path of the data folder') 

@@ -8,7 +8,7 @@ from utils.PyTorchEMD.emd import earth_mover_distance
 #from pytorch3d.loss import chamfer_distance
 #import utils.ChamferDistancePytorch.chamfer3D.dist_chamfer_3D as dist_chamfer_3D
 #from utils.ChamferDistancePytorch.chamfer_python import distChamfer
-
+#from model.im2mesh.eval import distance_p2p
 class ChamferDistance(nn.Module):
 
 	def forward(self, input1, input2, mode='nonsquared'):
@@ -37,15 +37,21 @@ class ChamferDistance(nn.Module):
 
 		# pytorch3d 
 		#loss_ptc_fine_pytorch3d, _ = chamfer_distance(ptcloud_pred_fine, ptcloud)
-
-		# atlasnet c cuda
-		#chamLoss = dist_chamfer_3D.chamfer_3DDist()
-		#dist1, dist2, idx1, idx2 = chamLoss(ptcloud_pred_fine, ptcloud)
-		#loss_ptc_fine_atlas = dist1.mean() + dist2.mean()
-
 		# atlasnet python
 		#dist1, dist2,_,_ = distChamfer(ptcloud_pred_fine, ptcloud)
 		#loss_ptc_fine_atlaspython = dist1.mean() + dist2.mean()
+		
+# atlasnet c cuda
+class ChamferDistanceL2(nn.Module):
+	def __init__(self):
+		super(ChamferDistanceL2, self).__init__()
+		self.chamLoss = dist_chamfer_3D.chamfer_3DDist()
+
+	def forward(self, prediction, gt):
+		dist1, dist2, idx1, idx2 = self.chamLoss(prediction, gt)
+		loss_ptc_fine_atlas = torch.mean(dist1) + torch.mean(dist2)
+		return loss_ptc_fine_atlas
+
 	
 def emd(pred, gt):
 	""" earth mover distance

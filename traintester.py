@@ -101,7 +101,6 @@ class TrainTester(object):
         self.device = args.device
         self.mean = args.mean
         self.stddev = args.stddev
-        self.lambda_loss_classification = args.lambda_loss_classification
         self.lambda_loss_primitive = args.lambda_loss_primitive
         self.lambda_loss_fine = args.lambda_loss_fine
         self.lambda_loss_manifold = args.lambda_loss_manifold
@@ -212,6 +211,13 @@ class TrainTester(object):
                 batch_fineCD_loss = self.lambda_loss_fine * loss_ptc_fine.item()
                 loss_all = self.lambda_loss_fine * loss_ptc_fine
             
+            elif self.model == 'atlasnet':
+                ptcloud_pred_fine, codeword = self.netG(image)
+                ptcloud_pred_fine = ptcloud_pred_fine.view(ptcloud_pred_fine.size(0), 1, -1, ptcloud_pred_fine.size(3)).squeeze(1)
+                loss_ptc_fine = self.criterion_G(ptcloud_pred_fine, ptcloud)
+                batch_fineCD_loss = self.lambda_loss_fine * loss_ptc_fine.item()
+                loss_all = self.lambda_loss_fine * loss_ptc_fine
+
             loss_all.backward()
             self.optimizer_G.step()
 
@@ -234,8 +240,8 @@ class TrainTester(object):
             if self.verbose_per_n_batch>0 and batch_idx % self.verbose_per_n_batch==0:
                 self.logger.info((
                     'Epoch={:<3d} [{:3.0f}%/{:<5d}] '
-                    'AVGloss (B,R)=({:.3f},{:.3f}) '
-                    'FineCDloss = {:.4f} '
+                    'AVGloss (B,R)=({:.6f},{:.6f}) '
+                    'FineCDloss = {:.6f} '
                     'lr = {:.5f} ').format(
                     epoch, 100.*batch_idx/loader.__len__(), len(loader.dataset),
                     batch_loss, self.running_loss,
@@ -271,6 +277,9 @@ class TrainTester(object):
                     _, ptcloud_pred_fine, codeword, _ = self.netG(image)
                 elif self.model == 'psgn':
                     ptcloud_pred_fine, codeword = self.netG(image)
+                elif self.model == 'atlasnet':
+                    ptcloud_pred_fine, codeword = self.netG(image)
+                    ptcloud_pred_fine = ptcloud_pred_fine.view(ptcloud_pred_fine.size(0), 1, -1, ptcloud_pred_fine.size(3)).squeeze(1)
 
                 loss_ptc_fine = self.criterion_G(ptcloud_pred_fine, ptcloud)
             
@@ -305,7 +314,7 @@ class TrainTester(object):
         elif type == 'val':
             self.stats_finecd_epochval.push(epoch, loss = chamfer_loss)
             self.writer.add_scalar('Loss/val', chamfer_loss, epoch)
-        self.logger.info('{} set (epoch={:<3d}): AverageLoss={:.4f}: ChamferLoss={:.4f}: '.format(type, epoch, test_loss, chamfer_loss))
+        self.logger.info('{} set (epoch={:<3d}): AverageLoss={:.6f}: ChamferLoss={:.6f}: '.format(type, epoch, test_loss, chamfer_loss))
 
         return chamfer_loss
 
