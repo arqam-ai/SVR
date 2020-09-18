@@ -55,13 +55,13 @@ Launch the experiment
 
 ## Models
 
-|               Model                | Chamfer Loss | Converge Epoch | LR / Decay step | Batch Size |
-| :--------------------------------: | :----------: | :------------: | :-------------: | :--------: |
-|             Oracle NN              |    0.048     |                |                 |            |
-| Folding + 6 FC + two loss backward |              |                |                 |            |
-| Folding + 6 FC + one loss backward |   0.120851   |       45       |    3e-3/ 40     |     64     |
-| Folding + 18FC + one loss backward |              |                |                 |            |
-|          PSGN(Fan) vanila          |   0.111106   |       60       |    3e-3 / 40    |     64     |
-|         AtlasNet 4 patches         |   0.107248   |       60       |    3e-3 / 40    |     64     |
-|         AtlasNet 1 sphere          |              |                |                 |            |
+|               Model                |       Chamfer Loss        |    Converge Epoch     | LR / Decay step | Batch Size |
+| :--------------------------------: | :-----------------------: | :-------------------: | :-------------: | :--------: |
+|             Oracle NN              |           0.048           |                       |                 |            |
+| Folding + 6 FC + two loss backward |                           |                       |                 |            |
+| Folding + 6 FC + one loss backward |  0.120851      0.115729   | 45                 60 |    3e-3/ 40     |     64     |
+| Folding + 18FC + one loss backward |         0.108352          |          60           |    3e-3/ 30     |     64     |
+|          PSGN(Fan) vanila          | 0.111106         0.112874 |          60           |    3e-3 / 40    |     64     |
+|         AtlasNet 4 patches         |         0.107248          |          60           |    3e-3 / 40    |     64     |
+|         AtlasNet 1 sphere          |                           |                       |                 |            |
 
