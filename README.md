@@ -69,7 +69,7 @@ Launch the experiment
 ## Save models
 
 ```bash
-cd SVR/experiments/
+cd SVR/experiment
 zip -r object_models.zip object_models
 # Download the object_models.zip
 ```
