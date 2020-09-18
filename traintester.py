@@ -300,20 +300,19 @@ class TrainTester(object):
             self.stats_finecd_itertest.push(self.train_iter, loss=chamfer_loss)
             self.stats_finecd_epochtest.push(epoch, loss = chamfer_loss)
             self.writer.add_scalar('Loss/test', chamfer_loss, epoch)
-            plot_log(self.stats_dir, ["stats_finecd_epochval.npz", "stats_finecd_itertrain.npz",
-                    "stats_finecd_epochtest.npz","stats_finecd_epochtrain.npz"])
         elif type == 'val':
             self.stats_finecd_epochval.push(epoch, loss = chamfer_loss)
             self.writer.add_scalar('Loss/val', chamfer_loss, epoch)
+            self.invoke_epoch_callback()
             plot_log(self.stats_dir, ["stats_finecd_epochval.npz", "stats_finecd_itertrain.npz",
-                    "stats_finecd_epochtest.npz","stats_finecd_epochtrain.npz"])
+                "stats_finecd_epochtrain.npz"])
         self.logger.info('{} set (epoch={:<3d}): AverageLoss={:.6f}: ChamferLoss={:.6f}: '.format(type, epoch, test_loss, chamfer_loss))
 
         return chamfer_loss
 
     def run(self, train_loader, test_loader, val_loader):
 
-        self.netG.to(self.device)
+        
         self.logger.info('Network Architecture:')
         print(str(self.netG))
         sys.stdout.flush()
@@ -358,7 +357,7 @@ class TrainTester(object):
                 )
 
             if new_val_loss < self.val_loss:
-                self.logger.info('Epoch %d saving checkpoint .... Training epoch loss %f' % (epoch, new_val_loss))
+                self.logger.info('Epoch %d saving checkpoint .... val epoch loss %f' % (epoch, new_val_loss))
                 #self.minloss['trainloss'] = (epoch, new_train_loss)
                 # torch.save(self.netI.state_dict(), os.path.join(self.snapshot_dir, "model_image_train_best.pth"))
                 torch.save(self.netG.state_dict(), os.path.join(self.snapshot_dir, "model_train_best.pth"))
@@ -378,9 +377,8 @@ class TrainTester(object):
                         type = 'test'
                     )
                 self.invoke_epoch_callback()
-                
+                plot_log(self.stats_dir, ["stats_finecd_epochtest.npz"])
             self.lr_scheduler_G.step()
-            
         self.save_stats()
         self.done = True
 

@@ -33,6 +33,7 @@ Before launch experiment, check the gpu id for each model
 
 ```bash
 cd experiment/object_models
+chmod +x object_models.sh
 vim object_models.sh
 ```
 

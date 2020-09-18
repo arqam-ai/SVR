@@ -24,18 +24,22 @@ abspath = os.path.dirname(os.path.abspath(__file__))
 
 def main(args):
 
-    check_exist_or_mkdirs(args.log_dir)
     logger = logging.getLogger()
+    check_exist_or_mkdirs(args.log_dir)
     file_log_handler = logging.FileHandler(os.path.join(args.log_dir,args.log_filename))
     logger.addHandler(file_log_handler)
-    logger.setLevel('INFO')
-    formatter = logging.Formatter()
+    stderr_log_handler = logging.StreamHandler(sys.stdout)
+    logger.addHandler(stderr_log_handler)
+    logger.setLevel("INFO")
+    formatter = logging.Formatter("%(asctime)s;%(levelname)s;%(message)s",
+                              "%Y-%m-%d %H:%M:%S")
     file_log_handler.setFormatter(formatter)
-
+    stderr_log_handler.setFormatter(formatter)
+    
 
     # load data
     starter_time = time.time()
-    kwargs = {'num_workers':8, 'pin_memory':True}
+    kwargs = {'num_workers':4, 'pin_memory':True}
     logger.info("loading train data ...")
     train_loader = torch.utils.data.DataLoader(
                 what3d_dataset_views(data_basedir=args.data_basedir, ptcloud_path=args.ptcloud_path, 

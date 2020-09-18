@@ -33,6 +33,7 @@ def plot_log(path, file_list):
         plt.close()
 
 
+
 def main(args):
 
 #    address_0 = 'baseline_lossplot'
