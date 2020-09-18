@@ -62,6 +62,6 @@ Launch the experiment
 | Folding + 6 FC + one loss backward |   0.120851   |       45       |    3e-3/ 40     |     64     |
 | Folding + 18FC + one loss backward |              |                |                 |            |
 |          PSGN(Fan) vanila          |   0.111106   |       60       |    3e-3 / 40    |     64     |
-|         AtlasNet 4 patches         |              |                |                 |            |
+|         AtlasNet 4 patches         |   0.107248   |       60       |    3e-3 / 40    |     64     |
 |         AtlasNet 1 sphere          |              |                |                 |            |
 
