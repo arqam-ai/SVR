@@ -18,10 +18,12 @@ CUDA2=1                                # gpu id for model2  Folding 6 layer fc d
 CUDA3=2                                # gpu id for model3  Folding 18 layer fc decoder only ONE-folding
 CUDA4=3                                # gpu id for model4  PSGN Fan vanila 
 CUDA5=3                                # gpu id for model5  AtlasNet 4 patches
-CUDA6=1                                # gpu id for model6  FoldingNet 18   repeat 1
+CUDA6=1                                # gpu id for model6  Folding 18 layer fc decoder repeat 1  only ONE-folding
 CUDA7=2                                # gpu id for model7  PSGN Fan vanila repeat 1
+CUDA8=2                                # gpu id for model8  Folding 6 layer fc decoder repeat 1  only ONE-folding
+CUDA9=3                                # gpu id for model9  AtlasNet 8 patches
 
-## FoldingNet with 6 layer fc decoder two-folding(loss backward)  (submission for ECCV2020)
+## Model 1 FoldingNet with 6 layer fc decoder two-folding(loss backward)  (submission for ECCV2020)
 #CUDA_VISIBLE_DEVICES=$CUDA1 python ../../train.py --data-basedir '../../../What3D' \
 #						  --ptcloud-path "ptcloud_n.npz" \
 #						  --model "foldingres6" \
@@ -52,7 +54,7 @@ CUDA7=2                                # gpu id for model7  PSGN Fan vanila repe
 #						  --test \
 #						  --train &
 #
-### FoldingNet with 6 layer fc decoder only ONE-folding(loss backward)  
+### Model 2 FoldingNet with 6 layer fc decoder only ONE-folding(loss backward)  
 #CUDA_VISIBLE_DEVICES=$CUDA2 python ../../train.py --data-basedir '../../../What3D' \
 #						  --ptcloud-path "ptcloud_n.npz" \
 #						  --model "foldingres6" \
@@ -81,7 +83,7 @@ CUDA7=2                                # gpu id for model7  PSGN Fan vanila repe
 #						  --test \
 #						  --train &
 #
-### FoldingNet with 18 layer fc decoder only ONE-folding  
+### Model 3 FoldingNet with 18 layer fc decoder only ONE-folding  
 #CUDA_VISIBLE_DEVICES=$CUDA3 python ../../train.py --data-basedir '../../../What3D' \
 #						  --ptcloud-path "ptcloud_n.npz" \
 #						  --model "foldingres18" \
@@ -110,7 +112,7 @@ CUDA7=2                                # gpu id for model7  PSGN Fan vanila repe
 #						  --test \
 #						  --train &
 #
-### PSGN Haoqiang Fan 
+### Model 4 PSGN Haoqiang Fan 
 #CUDA_VISIBLE_DEVICES=$CUDA4 python ../../train.py --data-basedir '../../../What3D' \
 #						  --ptcloud-path "ptcloud_n.npz" \
 #						  --model "psgn" \
@@ -137,7 +139,7 @@ CUDA7=2                                # gpu id for model7  PSGN Fan vanila repe
 #						  --test \
 #						  --train &
 
-## AtlasNet 4 patches
+## Model 5 AtlasNet 4 patches
 # CUDA_VISIBLE_DEVICES=$CUDA5 python ../../train.py --data-basedir '../../../What3D' \
 # 						  --ptcloud-path "ptcloud_n.npz" \
 # 						  --model "atlasnet" \
@@ -164,39 +166,66 @@ CUDA7=2                                # gpu id for model7  PSGN Fan vanila repe
 # 						  --test \
 # 						  --train &
 						  
-### FoldingNet with 18 layer fc decoder only ONE-folding  repeat 1  
-CUDA_VISIBLE_DEVICES=$CUDA6 python ../../train.py --data-basedir '../../../What3D' \
-						  --ptcloud-path "ptcloud_n.npz" \
-						  --model "foldingres18" \
-						  --image-size 224 \
-						  --view $VIEWS \
-						  --sample-ratio $SAMPLERATIO \
-						  --total-epoch $EPOCH \
-						  --train-batch-size $TRAINBATCH \
-						  --test-batch-size $TESTBATCH \
-						  --val-batch-size $VALBATCH \
-						  --verbose_per_n_batch 50 \
-						  --test_per_n_epoch $TEST_STEP \
-						  --lambda-loss-fine 1. \
-						  --mode $MODE \
-						  --output-dir 'foldingres18_rp1/' \
-						  --snapshot-dir 'foldingres18_rp1/' \
-						  --log-dir	'foldingres18_rp1/'	\
-						  --lr-G $LR \
-						  --momentum $MOMENTUM \
-						  --weight-decay $WEIGHTDECAY \
-						  --lr_decay_step $DECAYSTEP \
-						  --tensorboard \
-						  --if-BNstats \
-						  --bnstats-step $BNSTATS_STEP \
-						  --save-results \
-						  --test \
-						  --train &
+### Model 6 FoldingNet with 18 layer fc decoder only ONE-folding  repeat 1  
+# CUDA_VISIBLE_DEVICES=$CUDA6 python ../../train.py --data-basedir '../../../What3D' \
+# 						  --ptcloud-path "ptcloud_n.npz" \
+# 						  --model "foldingres18" \
+# 						  --image-size 224 \
+# 						  --view $VIEWS \
+# 						  --sample-ratio $SAMPLERATIO \
+# 						  --total-epoch $EPOCH \
+# 						  --train-batch-size $TRAINBATCH \
+# 						  --test-batch-size $TESTBATCH \
+# 						  --val-batch-size $VALBATCH \
+# 						  --verbose_per_n_batch 50 \
+# 						  --test_per_n_epoch $TEST_STEP \
+# 						  --lambda-loss-fine 1. \
+# 						  --mode $MODE \
+# 						  --output-dir 'foldingres18_rp1/' \
+# 						  --snapshot-dir 'foldingres18_rp1/' \
+# 						  --log-dir	'foldingres18_rp1/'	\
+# 						  --lr-G $LR \
+# 						  --momentum $MOMENTUM \
+# 						  --weight-decay $WEIGHTDECAY \
+# 						  --lr_decay_step $DECAYSTEP \
+# 						  --tensorboard \
+# 						  --if-BNstats \
+# 						  --bnstats-step $BNSTATS_STEP \
+# 						  --save-results \
+# 						  --test \
+# 						  --train &
 
-## PSGN Haoqiang Fan 
-CUDA_VISIBLE_DEVICES=$CUDA7 python ../../train.py --data-basedir '../../../What3D' \
+### Model 7 PSGN Haoqiang Fan 
+# CUDA_VISIBLE_DEVICES=$CUDA7 python ../../train.py --data-basedir '../../../What3D' \
+# 						  --ptcloud-path "ptcloud_n.npz" \
+# 						  --model "psgn" \
+# 						  --image-size 224 \
+# 						  --view $VIEWS \
+# 						  --sample-ratio $SAMPLERATIO \
+# 						  --total-epoch $EPOCH \
+# 						  --train-batch-size $TRAINBATCH \
+# 						  --test-batch-size $TESTBATCH \
+# 						  --val-batch-size $VALBATCH \
+# 						  --verbose_per_n_batch 50 \
+# 						  --test_per_n_epoch $TEST_STEP \
+# 						  --lambda-loss-fine 1. \
+# 						  --mode $MODE \
+# 						  --output-dir 'psgn_rp1/' \
+# 						  --snapshot-dir 'psgn_rp1/' \
+# 						  --log-dir	'psgn_rp1/'	\
+# 						  --lr-G $LR \
+# 						  --momentum $MOMENTUM \
+# 						  --weight-decay $WEIGHTDECAY \
+# 						  --lr_decay_step $DECAYSTEP \
+# 						  --tensorboard \
+# 						  --save-results \
+# 						  --test \
+# 						  --train &
+
+### Model 8 Folding 6 layer fc decoder only ONE-folding repeat 1 
+CUDA_VISIBLE_DEVICES=$CUDA8 python ../../train.py --data-basedir '../../../What3D' \
 						  --ptcloud-path "ptcloud_n.npz" \
-						  --model "psgn" \
+						  --model "foldingres6" \
 						  --image-size 224 \
 						  --view $VIEWS \
 						  --sample-ratio $SAMPLERATIO \
@@ -208,9 +237,9 @@ CUDA_VISIBLE_DEVICES=$CUDA7 python ../../train.py --data-basedir '../../../What3
 						  --test_per_n_epoch $TEST_STEP \
 						  --lambda-loss-fine 1. \
 						  --mode $MODE \
-						  --output-dir 'psgn_rp1/' \
-						  --snapshot-dir 'psgn_rp1/' \
-						  --log-dir	'psgn_rp1/'	\
+						  --output-dir 'foldingres6_rp1/' \
+						  --snapshot-dir 'foldingres6_rp1/' \
+						  --log-dir	'foldingres6_rp1/'	\
 						  --lr-G $LR \
 						  --momentum $MOMENTUM \
 						  --weight-decay $WEIGHTDECAY \
