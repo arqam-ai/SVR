@@ -66,3 +66,11 @@ Launch the experiment
 |         AtlasNet 1 sphere          |                        running in seu                        |                |                 |            |
 |   AtlasNet 4 patches without BN    |                        running in seu                        |                |                 |            |
 
+## Save models
+
+```bash
+cd SVR/experiments/
+zip -r object_models.zip object_models
+# Download the object_models.zip
+```
+
