@@ -161,11 +161,10 @@ if __name__ == "__main__":
     parser.add_argument("--class-path",   dest="class_path",   type=str,   default='classes.txt',help="class name list")
     parser.add_argument("--image-size",   dest="image_size",   type=int,   default = 224,help="image size for network")
     parser.add_argument("--sample-ratio", dest="sample_ratio", type=float, default = 0.001,help="ratio to sample the dataset")
-    parser.add_argument("--views",dest="views", type=str,default= '0',help="five view for each instance")
-    parser.add_argument("--pts-num",dest="pts_num", type=int,default=1024,help="number of points in a ptcloud")
+    parser.add_argument("--views",dest="views",                type=str,   default= '0',help="five view for each instance")
+    parser.add_argument("--pts-num",dest="pts_num", type=int,             default=1024,help="number of points in a ptcloud")
 
-    parser.add_argument("--mode",
-                      dest="mode", type=str,
+    parser.add_argument("--mode",dest="mode", type=str,
                       default="object", 
                       help="['viewer', 'object']")
 
@@ -292,6 +291,21 @@ if __name__ == "__main__":
                       type=float, default=0.1,
                       help='learning rate decay rate'
                       )
+
+    # AtlasNet Network
+    parser.add_argument('--num_layers', type=int, default=2, help='number of hidden MLP Layer')
+    parser.add_argument('--hidden_neurons', type=int, default=512, help='number of neurons in each hidden layer')
+    #parser.add_argument('--loop_per_epoch', type=int, default=1, help='number of data loop per epoch')
+    parser.add_argument('--nb_primitives', type=int, default=4, help='number of primitives')
+    parser.add_argument('--template_type', type=str, default="SQUARE", choices=["SPHERE", "SQUARE"],
+                        help='dim_out_patch')
+    #', nargs='+', type=int, default=[0], help='Use multiple gpus')
+    parser.add_argument("--remove_all_batchNorms", action="store_true", default=False, help="Replace all batchnorms by identity")
+    parser.add_argument('--bottleneck_size', type=int, default=1024, help='dim_out_patch')
+    parser.add_argument('--activation', type=str, default='relu',
+                        choices=["relu", "sigmoid", "softplus", "logsigmoid", "softsign", "tanh"], help='dim_out_patch')
+
+
     parser.add_argument("--tensorboard", action="store_true",
                       dest="tensorboard",
                       default= None) 

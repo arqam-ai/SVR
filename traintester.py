@@ -39,8 +39,8 @@ class BN_Stats(object):
         self.stastics = {"mean":[], "var":[]}
         self.layer_name = layer_name
     def __call__(self, module, module_in, module_out):
-        self.stastics["mean"].append(torch.mean(module_out,dim=[0,2]).detach().cpu().numpy().astype(np.float16))
-        self.stastics["var"].append(torch.var(module_out,dim=[0,2],unbiased=False).detach().cpu().numpy().astype(np.float16))
+        self.stastics["mean"].append(torch.mean(module_in,dim=[0,2]).detach().cpu().numpy().astype(np.float16))
+        self.stastics["var"].append(torch.var(module_in,dim=[0,2],unbiased=False).detach().cpu().numpy().astype(np.float16))
     def clear(self):
         self.stastics = {"mean":[], "var":[]}
     def save(self, path):
@@ -122,11 +122,11 @@ class TrainTester(object):
         self.if_BNstats = args.if_BNstats
 
         if self.checkpoint_model:
-            print("Loading model checkpoint ...")
+            self.logger.info("Loading model checkpoint ...")
             self.netG.load_state_dict(torch.load(self.checkpoint_model))
 
         if self.checkpoint_solver:
-            print("Loading solver checkpoint ...")
+            self.logger.info("Loading solver checkpoint ...")
             self.optimizer_G.load_state_dict(torch.load(self.checkpoint_solver))
 
     def invoke_epoch_callback(self):
@@ -135,7 +135,7 @@ class TrainTester(object):
                 try:
                     cb()
                 except:
-                    logger.warn('epoch_callback[{}] failed.'.format(ith))
+                    self.logger.warn('epoch_callback[{}] failed.'.format(ith))
 
     def adjust_lr_linear(self, step, total_step):
         base_lr = self.solver.defaults['lr']
@@ -314,7 +314,7 @@ class TrainTester(object):
 
         
         self.logger.info('Network Architecture:')
-        print(str(self.netG))
+        self.logger.info(str(self.netG))
         sys.stdout.flush()
         # add a hook_fn as a member, then when epoch condition enable hook otherwise remove, 
         # consider save it as use numpy key, 'epoch': "mean" 2x2350x512 "var"2x2350x4   
@@ -347,8 +347,8 @@ class TrainTester(object):
 ######################## BN statistics END #######################                
                 if epoch in self.bn_stats_epoch and self.if_BNstats:
                     self.hook_bn(mode='disable')
-                    self.bn1_stats.save(os.path.join(self.stats_dir, "epoch%d_layer_%s.npz"%(epoch,"bn1")))
-                    self.bn6_stats.save(os.path.join(self.stats_dir, "epoch%d_layer_%s.npz"%(epoch,"bn6")))
+                    self.bn1_stats.save(os.path.join(self.stats_dir, "epoch%d_layer_%s_input.npz"%(epoch,"bn1")))
+                    self.bn6_stats.save(os.path.join(self.stats_dir, "epoch%d_layer_%s_input.npz"%(epoch,"bn6")))
                     
                 new_val_loss = self.test(
                     epoch=epoch,
