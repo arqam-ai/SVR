@@ -55,16 +55,17 @@ Launch the experiment
 
 ## Models
 
-|               Model                |                         Chamfer Loss                         | Converge Epoch | LR / Decay step | Batch Size |
-| :--------------------------------: | :----------------------------------------------------------: | :------------: | :-------------: | :--------: |
-|             Oracle NN              |                            0.048                             |                |                 |            |
-| Folding + 6 FC + two loss backward |                        running in ec2                        |                |                 |            |
-| Folding + 6 FC + one loss backward | 0.120851 / 0.115729 / **need one more datapoint(Model2 in sh file)** |     45/60      |    3e-3/ 40     |     64     |
-| Folding + 18FC + one loss backward |           0.108352/running in ec2/running in  seu            |       60       |    3e-3/ 30     |     64     |
-|          PSGN(Fan) vanila          |               0.111106/0.112874/running in ec2               |       60       |    3e-3 / 40    |     64     |
-|         AtlasNet 4 patches         |                           0.107248                           |       60       |    3e-3 / 40    |     64     |
-|         AtlasNet 1 sphere          |                        running in seu                        |                |                 |            |
-|   AtlasNet 4 patches without BN    |                        running in seu                        |                |                 |            |
+|               Model                |               Chamfer Loss               | Converge Epoch | LR / Decay step | Batch Size |
+| :--------------------------------: | :--------------------------------------: | :------------: | :-------------: | :--------: |
+|             Oracle NN              |                  0.048                   |                |                 |            |
+| Folding + 6 FC + two loss backward |                 0.136726                 |                |                 |            |
+| Folding + 6 FC + one loss backward | 0.120851 / 0.115729 / **running in seu** |     45/60      |    3e-3/ 40     |     64     |
+| Folding + 18FC + one loss backward |  0.108352/running in ec2/running in seu  |       60       |    3e-3/ 30     |     64     |
+|          PSGN(Fan) vanila          |        0.111106/0.112874/0.109004        |       60       |    3e-3 / 40    |     64     |
+|         AtlasNet 4 patches         |            0.107248/0.106854             |       60       |    3e-3 / 40    |     64     |
+|         AtlasNet 1 sphere          |                 0.107628                 |                |                 |            |
+|   AtlasNet 4 patches without BN    |              running in seu              |                |                 |            |
+|        AtlasNet 16 patches         |              running in seu              |                |                 |            |
 
 ## Save models
 
