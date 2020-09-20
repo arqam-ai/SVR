@@ -55,17 +55,17 @@ Launch the experiment
 
 ## Models
 
-|                  Model                   | Hidden layers/Hidden width/latent space width |       Grid        |              Chamfer Loss              | LR / Decay Step | Batch Size | Time   per epoch | Total Epoch |      |
-| :--------------------------------------: | :-------------------------------------------: | :---------------: | :------------------------------------: | :-------------: | ---------- | ---------------- | ----------- | ---- |
-|                Oracle NN                 |                                               |                   |                 0.048                  |                 |            |                  |             |      |
-|    Folding + 6 FC + two loss backward    |                14 / 512 /  512                | regular 2d square |                0.136726                |    3e-3/ 30     | 64         | 12 min           | 70          |      |
-|    Folding + 6 FC + one loss backward    |                1  /  512 / 512                | regular 2d square |        0.120851 **/** 0.115729         |    3e-3/ 30     | 64         | 7.9min           | 70          |      |
-| Folding + 6FC + ReLU + one loss backward |                7  /  512 / 512                | regular 2d square | 0.108352 **/** 0.106899 **/** 0.11011  |    3e-3/ 30     | 64         | 7.9min           | 70          |      |
-|             PSGN(Fan) vanila             |               2  /  512  / 512                |       None        | 0.111106 **/** 0.112874 **/** 0.109004 |    3e-3/ 30     | 64         | 3.6min           | 70          |      |
-|            AtlasNet 4 patches            |               3 /   512 / 1024                | random  2d square | 0.107248 **/** 0.106854 **/** 0.107671 |    3e-3/ 30     | 64         | 7.8min           | 70          |      |
-|      AtlasNet 4 patches without BN       |               3 /   512 / 1024                | random  2d square |                0.108662                |    3e-3/ 30     | 64         | 7.8min           | 70          |      |
-|            AtlasNet 1 sphere             |               3 /   512 / 1024                | random  3d sphere |                0.107628                |    3e-3/ 30     | 64         | 12 min(in P100)  | 70          |      |
-|           AtlasNet 16 patches            |               3 /   512 / 1024                | random  2d square |                0.107672                |    3e-3/ 30     | 64         | 16min(in P100)   | 70          |      |
+|                   Model                   | Hidden layers/Hidden width/latent space width |       Grid        |              Chamfer Loss              | LR / Decay Step | Batch Size | Time   per epoch | Total Epoch |      |
+| :---------------------------------------: | :-------------------------------------------: | :---------------: | :------------------------------------: | :-------------: | ---------- | ---------------- | ----------- | ---- |
+|                 Oracle NN                 |                                               |                   |                 0.048                  |                 |            |                  |             |      |
+|    Folding + 14 FC + two loss backward    |                14 / 512 /  512                | regular 2d square |                0.136726                |    3e-3/ 30     | 64         | 12 min           | 70          |      |
+|    Folding + 7 FC + one loss backward     |                1  /  512 / 512                | regular 2d square |        0.120851 **/** 0.115729         |    3e-3/ 30     | 64         | 7.9min           | 70          |      |
+| Folding + 7 FC + ReLU + one loss backward |                7  /  512 / 512                | regular 2d square | 0.108352 **/** 0.106899 **/** 0.11011  |    3e-3/ 30     | 64         | 7.9min           | 70          |      |
+|             PSGN(Fan) vanila              |               2  /  512  / 512                |       None        | 0.111106 **/** 0.112874 **/** 0.109004 |    3e-3/ 30     | 64         | 3.6min           | 70          |      |
+|            AtlasNet 4 patches             |               3 /   512 / 1024                | random  2d square | 0.107248 **/** 0.106854 **/** 0.107671 |    3e-3/ 30     | 64         | 7.8min           | 70          |      |
+|       AtlasNet 4 patches without BN       |               3 /   512 / 1024                | random  2d square |                0.108662                |    3e-3/ 30     | 64         | 7.8min           | 70          |      |
+|             AtlasNet 1 sphere             |               3 /   512 / 1024                | random  3d sphere |                0.107628                |    3e-3/ 30     | 64         | 12 min(in P100)  | 70          |      |
+|            AtlasNet 16 patches            |               3 /   512 / 1024                | random  2d square |                0.107672                |    3e-3/ 30     | 64         | 16min(in P100)   | 70          |      |
 
 
 
