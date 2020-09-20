@@ -112,19 +112,18 @@ class GeneratorVanilla(nn.Module):
 
     def __init__(self, grid_dims, resgen_width, resgen_depth, 
                  resgen_codelength, class_num, block,
-                 read_view = False, folding_twice = False):
+                 read_view = False, folding_twice = False, decoder_block = 1):
         
         super(GeneratorVanilla,self).__init__()
-        N = grid_dims[0]*grid_dims[1]
         u = (torch.arange(0., grid_dims[0]) / grid_dims[0] - 0.5).repeat(grid_dims[1])
         v = (torch.arange(0., grid_dims[1]) / grid_dims[1] - 0.5).expand(grid_dims[0], -1).t().reshape(-1)
-        t = torch.empty(grid_dims[0]*grid_dims[1], dtype = torch.float)
-        t.fill_(0.)
+        #t = torch.empty(grid_dims[0]*grid_dims[1], dtype = torch.float)
+        #t.fill_(0.)
        
         #self.read_view_branch = nn.Linear(2, resgen_codelength)
         #self.read_view = read_view
         self.folding_twice = folding_twice
-        
+        self.decoder_block = decoder_block
         self.encoder = resnet18(pretrained=False)
         init_weights(self.encoder, init_type="kaiming")
         self.grid = torch.stack((u, v), 1)
@@ -135,6 +134,7 @@ class GeneratorVanilla(nn.Module):
             GeneratorRes = GeneratorRes18
         self.G1 = GeneratorRes(resgen_width, resgen_codelength, input_dim = 2)
         init_weights(self.G1, init_type="xavier")
+        #if self.decoder_block > 1:
         if self.folding_twice:
             self.G2 = GeneratorRes(resgen_width, resgen_codelength, input_dim = 3)
             init_weights(self.G2, init_type="xavier")
@@ -156,13 +156,15 @@ class GeneratorVanilla(nn.Module):
         #1st generation
         f = torch.cat((tmpGrid, codeword), 2)
         f1 = self.G1.forward(f)
-        #2nd generation
+
+        #if self.decoder_block > 1:
         if self.folding_twice:
+            #2nd generation
             f = torch.cat((f1, codeword), 2)
             f = self.G2.forward(f)
-            return f1, f, img_feat , class_prediction
+            return f1, f, img_feat, class_prediction
 
-        return f1, f1, img_feat , class_prediction        
+        return f1, f1, img_feat, class_prediction        
 
 def main(args):
     kwargs = {'num_workers':4, 'pin_memory':True} if args.cuda else {}

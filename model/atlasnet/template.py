@@ -2,7 +2,7 @@
 import numpy as np
 import torch
 from torch.autograd import Variable
-
+import pymesh
 """
         Author : Thibault Groueix 01.11.2019
 """

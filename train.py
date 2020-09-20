@@ -83,7 +83,9 @@ def main(args):
             class_num=55,
             block=args.model,
             read_view=args.read_view,
-            folding_twice=args.folding_twice)
+            folding_twice=args.folding_twice,
+            decoder_block=args.decoder_block
+            )
 
     elif args.model == 'psgn':
         netG = config.get_model(config.load_config(path = os.path.join(abspath, 'model/im2mesh/configs/img/psgn.yaml'),
@@ -340,10 +342,9 @@ if __name__ == "__main__":
                       default= False,
                       help="if adding the view information in training", )
 
-    parser.add_argument("--folding-twice", action="store_true",
-                      dest="folding_twice",
-                      default= False,
-                      help="if folding twice", )
+    parser.add_argument("--folding-twice", action="store_true",dest="folding_twice",default=False, help="if folding twice", )
+    parser.add_argument("--decoder-block", type=int, dest="decoder_block", default=1, help="decoder block number")
+
 
     parser.add_argument("--if-BNstats", action="store_true", dest="if_BNstats", default=False, help="if calculate bn stats")
     parser.add_argument("--bnstats-step", type=int, dest="bnstats_step", default=30, help="step to log batch norm stats")

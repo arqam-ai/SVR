@@ -202,7 +202,7 @@ class TrainTester(object):
                 loss_all = self.lambda_loss_fine * loss_ptc_fine
             
             elif self.model == 'atlasnet':
-                ptcloud_pred_fine, codeword = self.netG(image)
+                ptcloud_pred_fine, codeword = self.netG(image, train=True)
                 ptcloud_pred_fine = ptcloud_pred_fine.view(ptcloud_pred_fine.size(0), 1, -1, ptcloud_pred_fine.size(3)).squeeze(1)
                 loss_ptc_fine = self.criterion_G(ptcloud_pred_fine, ptcloud)
                 batch_fineCD_loss = self.lambda_loss_fine * loss_ptc_fine.item()
@@ -268,7 +268,7 @@ class TrainTester(object):
                 elif self.model == 'psgn':
                     ptcloud_pred_fine, codeword = self.netG(image)
                 elif self.model == 'atlasnet':
-                    ptcloud_pred_fine, codeword = self.netG(image)
+                    ptcloud_pred_fine, codeword = self.netG(image, train=False)
                     ptcloud_pred_fine = ptcloud_pred_fine.view(ptcloud_pred_fine.size(0), 1, -1, ptcloud_pred_fine.size(3)).squeeze(1)
 
                 loss_ptc_fine = self.criterion_G(ptcloud_pred_fine, ptcloud)

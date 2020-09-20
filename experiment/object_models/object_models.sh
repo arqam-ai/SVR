@@ -22,6 +22,7 @@ CUDA6=0                                # gpu id for model6
 CUDA7=1                                # gpu id for model7
 CUDA8=0 							   # gpu id for model8  Folding 6 layer fc decoder repeat 2  only ONE-folding
 CUDA9=0       						   # gpu id for model9  AtlasNet 16 patches
+CUDA10=1							   # gpu id for model10  AtlasNet 4 patches 1 repeat
 
 # ## FoldingNet with 6 layer fc decoder two-folding(loss backward)  (submission for ECCV2020)
 # CUDA_VISIBLE_DEVICES=$CUDA1 python ../../train.py --data-basedir '../../../What3D' \
@@ -110,7 +111,7 @@ CUDA9=0       						   # gpu id for model9  AtlasNet 16 patches
 # 						  --bnstats-step $BNSTATS_STEP \
 # 						  --save-results \
 # 						  --test \
-# 						  --train &
+# 						  --train 
 
 # ## PSGN Haoqiang Fan 
 # CUDA_VISIBLE_DEVICES=$CUDA4 python ../../train.py --data-basedir '../../../What3D' \
@@ -137,7 +138,7 @@ CUDA9=0       						   # gpu id for model9  AtlasNet 16 patches
 # 						  --tensorboard \
 # 						  --save-results \
 # 						  --test \
-# 						  --train &
+# 						  --train 
 
 # ## AtlasNet 4 patches
 # CUDA_VISIBLE_DEVICES=$CUDA5 python ../../train.py --data-basedir '../../../What3D' \
@@ -253,8 +254,37 @@ CUDA9=0       						   # gpu id for model9  AtlasNet 16 patches
 # 						  --test \
 # 						  --train &
 
-## AtlasNet one sphere
-CUDA_VISIBLE_DEVICES=$CUDA9 python ../../train.py --data-basedir '../../../What3D' \
+# ## AtlasNet one sphere
+# CUDA_VISIBLE_DEVICES=$CUDA9 python ../../train.py --data-basedir '../../../What3D' \
+# 						  --ptcloud-path "ptcloud_n.npz" \
+# 						  --model "atlasnet" \
+# 						  --image-size 224 \
+# 						  --view $VIEWS \
+# 						  --sample-ratio $SAMPLERATIO \
+# 						  --total-epoch $EPOCH \
+# 						  --train-batch-size $TRAINBATCH \
+# 						  --test-batch-size $TESTBATCH \
+# 						  --val-batch-size $VALBATCH \
+# 						  --verbose_per_n_batch 50 \
+# 						  --test_per_n_epoch $TEST_STEP \
+# 						  --lambda-loss-fine 1. \
+# 						  --mode $MODE \
+# 						  --output-dir 'atlasnet_16patch/' \
+# 						  --snapshot-dir 'atlasnet_16patch/' \
+# 						  --log-dir	'atlasnet_16patch/'	\
+# 						  --lr-G $LR \
+# 						  --momentum $MOMENTUM \
+# 						  --weight-decay $WEIGHTDECAY \
+# 						  --lr_decay_step $DECAYSTEP \
+# 						  --tensorboard \
+# 						  --save-results \
+# 						  --nb_primitives 16 \
+# 						  --template_type "SQUARE" \
+# 						  --test \
+# 						  --train &
+
+## MODEL10  AtlasNet 4 patches
+CUDA_VISIBLE_DEVICES=$CUDA10 python ../../train.py --data-basedir '../../../What3D' \
 						  --ptcloud-path "ptcloud_n.npz" \
 						  --model "atlasnet" \
 						  --image-size 224 \
@@ -268,16 +298,14 @@ CUDA_VISIBLE_DEVICES=$CUDA9 python ../../train.py --data-basedir '../../../What3
 						  --test_per_n_epoch $TEST_STEP \
 						  --lambda-loss-fine 1. \
 						  --mode $MODE \
-						  --output-dir 'atlasnet_16patch/' \
-						  --snapshot-dir 'atlasnet_16patch/' \
-						  --log-dir	'atlasnet_16patch/'	\
+						  --output-dir 'atlasnet_4patch_rp1/' \
+						  --snapshot-dir 'atlasnet_4patch_rp1/' \
+						  --log-dir	'atlasnet_4patch_rp1/'	\
 						  --lr-G $LR \
 						  --momentum $MOMENTUM \
 						  --weight-decay $WEIGHTDECAY \
 						  --lr_decay_step $DECAYSTEP \
 						  --tensorboard \
 						  --save-results \
-						  --nb_primitives 16 \
-						  --template_type "SQUARE" \
 						  --test \
 						  --train &
