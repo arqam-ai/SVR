@@ -57,7 +57,7 @@ Launch the experiment
 
 |                   Model                   | Hidden layers/Hidden width/latent space width |       Grid        |              Chamfer Loss              | LR / Decay Step | Batch Size | Time   per epoch | Total Epoch |      |
 | :---------------------------------------: | :-------------------------------------------: | :---------------: | :------------------------------------: | :-------------: | ---------- | ---------------- | ----------- | ---- |
-|                 Oracle NN                 |                                               |                   |                 0.048                  |                 |            |                  |             |      |
+|                 Oracle NN                 |                                               |                   |                                        |                 |            |                  |             |      |
 |    Folding + 14 FC + two loss backward    |                14 / 512 /  512                | regular 2d square |                0.136726                |    3e-3/ 30     | 64         | 12 min           | 70          |      |
 |    Folding + 7 FC + one loss backward     |                1  /  512 / 512                | regular 2d square |        0.120851 **/** 0.115729         |    3e-3/ 30     | 64         | 7.9min           | 70          |      |
 | Folding + 7 FC + ReLU + one loss backward |                7  /  512 / 512                | regular 2d square | 0.108352 **/** 0.106899 **/** 0.11011  |    3e-3/ 30     | 64         | 7.9min           | 70          |      |
