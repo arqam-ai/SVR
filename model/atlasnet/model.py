@@ -1,7 +1,8 @@
 from model.atlasnet.atlasnet import Atlasnet
 from model.atlasnet.model_blocks import PointNet
 import torch.nn as nn
-import model.atlasnet.resnet as resnet
+import model.resnet as resnet
+#from torchvision import models
 
 
 class EncoderDecoder(nn.Module):
@@ -10,18 +11,17 @@ class EncoderDecoder(nn.Module):
     Author : Thibault Groueix 01.11.2019
     """
 
-    def __init__(self, opt):
+    def __init__(self, args):
         super(EncoderDecoder, self).__init__()
-        if opt.SVR:
-            self.encoder = resnet.resnet18(pretrained=False, num_classes=opt.bottleneck_size)
+        if args.SVR:
+            self.encoder = resnet.resnet18(pretrained=False, num_classes=args.bottleneck_size)
         else:
-            self.encoder = PointNet(nlatent=opt.bottleneck_size)
+            self.encoder = PointNet(nlatent=args.bottleneck_size)
 
-        self.decoder = Atlasnet(opt)
-        self.to(opt.device)
+        self.decoder = Atlasnet(args)
+        self.to(args.device)
 
-        if not opt.SVR:
-            self.apply(weights_init)  # initialization of the weights
+
         self.eval()
 
     def forward(self, x, train=True):

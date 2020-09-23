@@ -12,10 +12,10 @@ from model.pointnet import PointwiseMLP
 from utils.utils import init_weights
 import argparse
 import sys
-#from utils.visualize_pts import draw_pts,colormap2d
 from matplotlib import pyplot as plt
-#from encoders import Encoder
-from model.resnet_pytorch import resnet18
+#from torchvision import models
+from model.resnet import resnet
+from layers import ResnetBlockFC
 
 class GeneratorSingle(nn.Module):
     def __init__(self, dims):
@@ -26,83 +26,30 @@ class GeneratorSingle(nn.Module):
     def forward(self, X):
         return self.mlp.forward(X)
 
-class GeneratorRes6(nn.Module):
-    def __init__(self, width, codelength, input_dim = 2):
-        super(GeneratorRes6, self).__init__()
-        self.input_layer = PointwiseMLP([input_dim+codelength, width], doLastRelu=True)
-        self.layer1 = PointwiseMLP([width, width], doLastRelu=False)
-        self.layer2 = PointwiseMLP([width, width], doLastRelu=False)
-        self.layer3 = PointwiseMLP([width, width], doLastRelu=False)
-        self.layer4 = PointwiseMLP([width, width], doLastRelu=False)
-        self.layer5 = PointwiseMLP([width, width], doLastRelu=False)
-        self.layer6 = PointwiseMLP([width, width], doLastRelu=False)
-        self.bn1 = nn.BatchNorm1d(width)
-        self.bn2 = nn.BatchNorm1d(width)
-        self.bn3 = nn.BatchNorm1d(width)
-        self.bn4 = nn.BatchNorm1d(width)
-        self.bn5 = nn.BatchNorm1d(width)
-        self.bn6 = nn.BatchNorm1d(width)
-        self.layer7 = PointwiseMLP([width, 64], doLastRelu=True)
-        self.layer8 = PointwiseMLP([64, 3], doLastRelu=False)
+class GeneratorResFC(nn.Module):
+    def __init__(self, hidden_neurons, bottleneck_size, num_layers, activation, input_dim = 2):
 
-    def forward(self, X):
-        X = self.input_layer(X)
-        Y = self.layer1(X)
-        Y = self.bn1(Y.permute(0, 2, 1)).permute(0, 2, 1)
-        X = self.layer2(Y + X)
-        X = self.bn2(X.permute(0, 2, 1)).permute(0, 2, 1)
-        Y = self.layer3(X)
-        Y = self.bn3(Y.permute(0, 2, 1)).permute(0, 2, 1)
-        X = self.layer4(Y + X)
-        X = self.bn4(X.permute(0, 2, 1)).permute(0, 2, 1)
-        Y = self.layer5(X)
-        Y = self.bn5(Y.permute(0, 2, 1)).permute(0, 2, 1)
-        X = self.layer6(Y + X)
-        X = self.bn6(X.permute(0, 2, 1)).permute(0, 2, 1)
-        X = self.layer7(X)
-        X = self.layer8(X)
+        assert num_layers % 2 == 0, "The number of hidden layer in FoldingNet resnet decoder should be even"
+        super(GeneratorResFC, self).__init__()
+        self.hidden_neurons = hidden_neurons
+        self.num_layers = num_layers
+        self.input_layer = nn.Linear([input_dim+bottleneck_size, self.hidden_neurons])
+        self.ResBlock_list = nn.ModuleList(
+            [ResnetBlockFC(size_in=hidden_neurons, size_out=hidden_neurons) for _ in range(0, self.num_layers/2)])
 
-        return X
-
-
-class GeneratorRes18(nn.Module):
-    def __init__(self, width, codelength, input_dim = 2):
-
-        super(GeneratorRes18, self).__init__()
-        self.input_layer = PointwiseMLP([input_dim+codelength, width], doLastRelu=True)
-        self.layer1 = PointwiseMLP([width, width], doLastRelu=True)
-        self.layer2 = PointwiseMLP([width, width], doLastRelu=True)
-        self.layer3 = PointwiseMLP([width, width], doLastRelu=True)
-        self.layer4 = PointwiseMLP([width, width], doLastRelu=True)
-        self.layer5 = PointwiseMLP([width, width], doLastRelu=True)
-        self.layer6 = PointwiseMLP([width, width], doLastRelu=True)
-        self.bn1 = nn.BatchNorm1d(width)
-        self.bn2 = nn.BatchNorm1d(width)
-        self.bn3 = nn.BatchNorm1d(width)
-        self.bn4 = nn.BatchNorm1d(width)
-        self.bn5 = nn.BatchNorm1d(width)
-        self.bn6 = nn.BatchNorm1d(width)
-        self.layer7 = PointwiseMLP([width, 64], doLastRelu=True)        
-        self.layer8 = PointwiseMLP([64, 3], doLastRelu=False)
+        self.output_layer1 = nn.Linear([self.hidden_neurons, 64]) 
+        self.output_layer2 = nn.Linear([64, 3])  
+        self.activation = nn.ReLU()
+        
         
     def forward(self, X):
-        X = self.input_layer(X)
-        Y = self.layer1(X)
-        Y = self.bn1(Y.permute(0, 2, 1)).permute(0, 2, 1)
-        X = self.layer2(Y + X)
-        X = self.bn2(X.permute(0, 2, 1)).permute(0, 2, 1)
-        
-        Y = self.layer3(X)
-        Y = self.bn3(Y.permute(0, 2, 1)).permute(0, 2, 1)
-        X = self.layer4(Y + X)
-        X = self.bn4(X.permute(0, 2, 1)).permute(0, 2, 1)
-        
-        Y = self.layer5(X)
-        Y = self.bn5(Y.permute(0, 2, 1)).permute(0, 2, 1)
-        X = self.layer6(Y + X)
-        X = self.bn6(X.permute(0, 2, 1)).permute(0, 2, 1)
-        X = self.layer7(X)
-        X = self.layer8(X)
+        X = self.activation(self.input_layer(X))
+
+        for i in range(0, self.num_layers/2):
+            X = self.ResBlock_list[i](X)
+           
+        X = self.activation(self.output_layer1(X))
+        X = self.output_layer2(X)
         
         return X
 
@@ -110,54 +57,42 @@ class GeneratorRes18(nn.Module):
     
 class GeneratorVanilla(nn.Module):
 
-    def __init__(self, grid_dims, resgen_width, resgen_depth, 
-                 resgen_codelength, class_num, block,
-                 read_view = False, folding_twice = False, decoder_block = 1):
+    def __init__(self, grid_dims, hidden_neurons, num_layers, 
+                 bottleneck_size, class_num, device, folding_twice = False):
         
         super(GeneratorVanilla,self).__init__()
         u = (torch.arange(0., grid_dims[0]) / grid_dims[0] - 0.5).repeat(grid_dims[1])
         v = (torch.arange(0., grid_dims[1]) / grid_dims[1] - 0.5).expand(grid_dims[0], -1).t().reshape(-1)
-        #t = torch.empty(grid_dims[0]*grid_dims[1], dtype = torch.float)
-        #t.fill_(0.)
-       
-        #self.read_view_branch = nn.Linear(2, resgen_codelength)
-        #self.read_view = read_view
+
         self.folding_twice = folding_twice
-        self.decoder_block = decoder_block
-        self.encoder = resnet18(pretrained=False)
-        init_weights(self.encoder, init_type="kaiming")
+        self.encoder = resnet.resnet18(pretrained=False, num_classes=bottleneck_size)
         self.grid = torch.stack((u, v), 1)
         self.N = grid_dims[0] * grid_dims[1]
-        if block == "foldingres6":
-            GeneratorRes = GeneratorRes6
-        elif block == "foldingres18":
-            GeneratorRes = GeneratorRes18
-        self.G1 = GeneratorRes(resgen_width, resgen_codelength, input_dim = 2)
-        init_weights(self.G1, init_type="xavier")
-        #if self.decoder_block > 1:
+
+        self.G1 = GeneratorResFC(hidden_neurons, bottleneck_size, num_layers, activation, input_dim = 2)
+        
         if self.folding_twice:
-            self.G2 = GeneratorRes(resgen_width, resgen_codelength, input_dim = 3)
-            init_weights(self.G2, init_type="xavier")
+            self.G2 = GeneratorResFC(hidden_neurons, bottleneck_size, num_layers, activation, input_dim = 3)
+            
         self.classifier = nn.Linear(512, class_num)
           
     def forward(self, X, view=None):
 
-        img_feat = self.encoder(X)                      # B* 512
-        img_feat = img_feat.unsqueeze(1)                # B* 1 * 512                 
-        codeword = img_feat.expand(-1, self.N, -1)      # B* self.N *512
+        img_feat = self.encoder(X)                      # B *  512
+        img_feat = img_feat.unsqueeze(1)                # B *  1 * 512                 
+        codeword = img_feat.expand(-1, self.N, -1)      # B *  self.N *512
 
         class_prediction = self.classifier(img_feat)
         B = codeword.shape[0]       					# extract batch size
         tmpGrid = self.grid
         tmpGrid = tmpGrid.unsqueeze(0)
         tmpGrid = tmpGrid.expand(B, -1, -1)     		# BxNx2
-        tmpGrid = tmpGrid.to(torch.device("cuda" if torch.cuda.is_available() else "cpu"))
+        tmpGrid = tmpGrid.to()
 
         #1st generation
         f = torch.cat((tmpGrid, codeword), 2)
         f1 = self.G1.forward(f)
 
-        #if self.decoder_block > 1:
         if self.folding_twice:
             #2nd generation
             f = torch.cat((f1, codeword), 2)
@@ -165,6 +100,118 @@ class GeneratorVanilla(nn.Module):
             return f1, f, img_feat, class_prediction
 
         return f1, f1, img_feat, class_prediction        
+
+# class GeneratorRes6(nn.Module):
+#     def __init__(self, width, codelength, input_dim = 2):
+#         super(GeneratorRes6, self).__init__()
+#         self.input_layer = PointwiseMLP([input_dim+codelength, width], doLastRelu=True)
+#         self.layer1 = PointwiseMLP([width, width], doLastRelu=False)
+#         self.layer2 = PointwiseMLP([width, width], doLastRelu=False)
+#         self.layer3 = PointwiseMLP([width, width], doLastRelu=False)
+#         self.layer4 = PointwiseMLP([width, width], doLastRelu=False)
+#         self.layer5 = PointwiseMLP([width, width], doLastRelu=False)
+#         self.layer6 = PointwiseMLP([width, width], doLastRelu=False)
+#         self.bn1 = nn.BatchNorm1d(width)
+#         self.bn2 = nn.BatchNorm1d(width)
+#         self.bn3 = nn.BatchNorm1d(width)
+#         self.bn4 = nn.BatchNorm1d(width)
+#         self.bn5 = nn.BatchNorm1d(width)
+#         self.bn6 = nn.BatchNorm1d(width)
+#         self.layer7 = PointwiseMLP([width, 64], doLastRelu=True)
+#         self.layer8 = PointwiseMLP([64, 3], doLastRelu=False)
+
+#     def forward(self, X):
+#         X = self.input_layer(X)
+#         Y = self.layer1(X)
+#         Y = self.bn1(Y.permute(0, 2, 1)).permute(0, 2, 1)
+#         X = self.layer2(Y + X)
+#         X = self.bn2(X.permute(0, 2, 1)).permute(0, 2, 1)
+#         Y = self.layer3(X)
+#         Y = self.bn3(Y.permute(0, 2, 1)).permute(0, 2, 1)
+#         X = self.layer4(Y + X)
+#         X = self.bn4(X.permute(0, 2, 1)).permute(0, 2, 1)
+#         Y = self.layer5(X)
+#         Y = self.bn5(Y.permute(0, 2, 1)).permute(0, 2, 1)
+#         X = self.layer6(Y + X)
+#         X = self.bn6(X.permute(0, 2, 1)).permute(0, 2, 1)
+#         X = self.layer7(X)
+#         X = self.layer8(X)
+
+#         return X
+
+
+# class GeneratorRes18(nn.Module):
+#     def __init__(self, width, codelength, input_dim = 2):
+
+#         super(GeneratorRes18, self).__init__()
+#         self.input_layer = PointwiseMLP([input_dim+codelength, width], doLastRelu=True)
+#         self.layer1 = PointwiseMLP([width, width], doLastRelu=True)
+#         self.layer2 = PointwiseMLP([width, width], doLastRelu=True)
+#         self.layer3 = PointwiseMLP([width, width], doLastRelu=True)
+#         self.layer4 = PointwiseMLP([width, width], doLastRelu=True)
+#         self.layer5 = PointwiseMLP([width, width], doLastRelu=True)
+#         self.layer6 = PointwiseMLP([width, width], doLastRelu=True)
+#         self.bn1 = nn.BatchNorm1d(width)
+#         self.bn2 = nn.BatchNorm1d(width)
+#         self.bn3 = nn.BatchNorm1d(width)
+#         self.bn4 = nn.BatchNorm1d(width)
+#         self.bn5 = nn.BatchNorm1d(width)
+#         self.bn6 = nn.BatchNorm1d(width)
+#         self.layer7 = PointwiseMLP([width, 64], doLastRelu=True)        
+#         self.layer8 = PointwiseMLP([64, 3], doLastRelu=False)
+        
+#     def forward(self, X):
+#         X = self.input_layer(X)
+#         Y = self.layer1(X)
+#         Y = self.bn1(Y.permute(0, 2, 1)).permute(0, 2, 1)
+#         X = self.layer2(Y + X)
+#         X = self.bn2(X.permute(0, 2, 1)).permute(0, 2, 1)
+        
+#         Y = self.layer3(X)
+#         Y = self.bn3(Y.permute(0, 2, 1)).permute(0, 2, 1)
+#         X = self.layer4(Y + X)
+#         X = self.bn4(X.permute(0, 2, 1)).permute(0, 2, 1)
+        
+#         Y = self.layer5(X)
+#         Y = self.bn5(Y.permute(0, 2, 1)).permute(0, 2, 1)
+#         X = self.layer6(Y + X)
+#         X = self.bn6(X.permute(0, 2, 1)).permute(0, 2, 1)
+#         X = self.layer7(X)
+#         X = self.layer8(X)
+        
+#         return X
+
+# class GeneratorResNaive(nn.Module):
+#     def __init__(self, hidden_neurons, bottleneck_size, num_layers, activation, input_dim = 2):
+
+#         assert num_layers % 2 == 0, "The number of hidden layer in FoldingNet resnet decoder should be even"
+#         super(GeneratorRes, self).__init__()
+#         self.hidden_neurons = hidden_neurons
+#         self.num_layers = num_layers
+#         self.input_layer = nn.Linear([input_dim+bottleneck_size, self.hidden_neurons])
+#         self.linear_list = nn.ModuleList(
+#             [nn.Linear(self.hidden_neurons, self.hidden_neurons) for i in range(self.num_layers)])
+#         self.bn_list = nn.ModuleList(
+#             [nn.BatchNorm1d(self.hidden_neurons) for i in range(self.num_layers)])
+
+#         self.output_layer1 = nn.Linear([self.hidden_neurons, 64]) 
+#         self.output_layer2 = nn.Linear([64, 3])  
+#         self.activation = nn.ReLU()
+        
+        
+#     def forward(self, X):
+#         X = self.input_layer(X)
+#         for i in range(0, num_layers, 2):
+#             Y = self.linear_list[i](X)
+#             Y = self.activation(self.bn_list[i](Y.permute(0, 2, 1)).permute(0, 2, 1))
+#             X = self.linear_list[i+1](Y + X)
+#             X = self.activation(self.bn_list[i+1](X.permute(0, 2, 1)).permute(0, 2, 1))
+
+#         X = self.activation(self.output_layer1(X))
+#         X = self.output_layer2(X)
+        
+#         return X
+
 
 def main(args):
     kwargs = {'num_workers':4, 'pin_memory':True} if args.cuda else {}

@@ -6,20 +6,21 @@ created: 2020/3/10 11:21 PM
 '''
 import os 
 import sys
-import torch
-import torch.nn as nn
-import torch.nn.functional as Functional
+#import torch
+#import torch.nn as nn
+#import torch.nn.functional as Functional
 import numpy as np
 import argparse
 from matplotlib import pyplot as plt
-sys.path.append(os.path.join(os.getcwd(), os.pardir, "../../"))
-from utils.loss import ChamferDistance
+sys.path.append(os.path.join(os.getcwd(), os.pardir, "../"))
+from mpl_toolkits.mplot3d import Axes3D
+#from utils.loss import ChamferDistance
 import optparse
 import json
 import cv2
 import tqdm
-from torch.utils.data import Dataset, DataLoader, TensorDataset
-import glog as logger
+#from torch.utils.data import Dataset, DataLoader, TensorDataset
+#import glog as logger
 import logging
 
 #from encoders import Encoder
@@ -171,6 +172,7 @@ def dict_Avg(Dict) :
     A = S / L
     return A
 
+'''
 class Oracle_NN(nn.Module):
 
     def __init__(self, device, logger):
@@ -228,9 +230,83 @@ class Oracle_NN(nn.Module):
             class_trainindex[index], loss_all[index] = self.NN(train_gt, test_gt[index].unsqueeze(0)) 
             self.invoke_epoch_callback()
         return torch.mean(loss_all), class_trainindex
+    
+    def test(self, gt_ptcloud, trainidx_path):
+        pass
+    '''
+
+def visualizer(gt, prediction, path, split_name, idx):
+    fig = plt.figure(figsize=(10, 4))
+    ax = fig.add_subplot(131, projection='3d')
+    ax.scatter(gt[:, 0], gt[:, 1], gt[:, 2], s=5, alpha=0.5)
+    ax.set_xlim([-0.5, 0.5])
+    ax.set_ylim([-0.5, 0.5])
+    ax.set_zlim([-0.5, 0.5])
+    ax.set_title("GT")
+    plt.axis("off")
+    ax = fig.add_subplot(132, projection='3d')
+    ax.scatter(prediction[:, 0], prediction[:, 1], prediction[:, 2], s=5, alpha=0.5)
+    ax.set_xlim([-0.5, 0.5])
+    ax.set_ylim([-0.5, 0.5])
+    ax.set_zlim([-0.5, 0.5])
+    ax.set_title("Prediction")
+    plt.axis("off")
+    ax = fig.add_subplot(133)
+    image = np.ones((224,224,3))
+    ax.imshow(image)
+    plt.axis("off")
+    title = os.path.join(path, "%s_%d" % (split_name,idx))
+    fig.savefig(title, bbox_inches='tight',pad_inches = 0, dpi = 200)
+    plt.close()
+
+class Oracle_NN_infer(object):
+
+    def __init__(self, device, logger):
+        super(Oracle_NN_infer,self).__init__()
+        self.test_index = 0
+
+    def forward(self, train_gt, test_gt, pred_trainindex):
+        
+        for local_test_index, train_index in enumerate(pred_trainindex):
+            if self.test_index % 200 == 0:
+                prediction = train_gt[train_index]
+                gt = test_gt[local_test_index]
+                visualizer(gt, prediction, "../experiment/Oracle_NN/Oracle_object/final_vis", "test", self.test_index/200)
+            self.test_index += 1
 
 
-def main(args):
+def infer(args, train_index_path):
+    _, test_class_dic, _, _ = class_counter(args, 'test')
+    _, train_class_dic, _, _ = class_counter(args, 'train')
+    model = Oracle_NN_infer(None, None)
+    kwargs = {'num_workers':4, 'pin_memory':True}
+    pred_trainindex = np.load(train_index_path)[:,0]
+    # the class order of loaded ptcloud is consistent with train/test_class_dic's key 
+    ptcloud = np.load(args.ptcloud_path)
+    train_set = ptcloud['train']         
+    test_set = ptcloud['test']
+    assert train_set.shape[0] == sum(train_class_dic.values())
+    assert test_set.shape[0] == sum(test_class_dic.values())
+    
+    train_idx = 0 # front index of a train class
+    test_idx = 0 # front index of a test class
+    train_slicer = 0 # back index of a train class
+    test_slicer = 0 # back index of a test class
+    class_loss = {} 
+
+    for idx, key in enumerate(train_class_dic):
+        train_slicer += train_class_dic[key]
+        test_slicer += test_class_dic[key]
+        print('key:{},train_idx:{},train_slicer:{},num:{}'.format(key, train_idx, train_slicer, train_class_dic[key]))
+        print('key:{},test_idx:{},test_slicer:{},num:{}'.format(key, test_idx, test_slicer, test_class_dic[key]))
+        # input specific class train set and test set to model.forward 
+        model.forward(train_set[train_idx:train_slicer], 
+              test_set[test_idx:test_slicer], pred_trainindex[test_idx:test_slicer])
+        train_idx += train_class_dic[key]
+        test_idx += test_class_dic[key]
+
+
+def search(args):
     
     logger = logging.getLogger()
     file_log_handler = logging.FileHandler('Train.log')
@@ -241,7 +317,7 @@ def main(args):
     #stderr_log_handler = logging.StreamHandler(sys.stdout)
     #logger.addHandler(stderr_log_handler)
     #stderr_log_handler.setFormatter(formatter)
-
+    logger.info("Running script for trainning the Oracle NN")
     # class_dic : {'class name ': instance number of test/train set}
     _, test_class_dic, _, _ = class_counter(args, 'test')
     _, train_class_dic, _, _ = class_counter(args, 'train')
@@ -290,12 +366,13 @@ def main(args):
     np.save('class_loss.npy', class_loss)
     
     
+    
 
 if __name__ == '__main__':
 
     
     parser = argparse.ArgumentParser(sys.argv[0])
-    parser.add_argument('--data-basedir',type=str,default='../../../What3D',
+    parser.add_argument('--data-basedir',type=str,default='../../What3D',
                     help='path of the jsonfile')
     parser.add_argument('--img-path',type=str,default='renderings',
                     help='path of the jsonfile')
@@ -304,12 +381,13 @@ if __name__ == '__main__':
     parser.add_argument('--class-path',type=str,default='classes.txt',
                     help='path of the jsonfile')
     parser.add_argument("--ptcloud-path",type=str,
-                        default="../../../What3D/ptcloud_0.npz",
+                        default="../../What3D/ptcloud_object.npz",
                         help=' ' )
     args = parser.parse_args(sys.argv[1:])
-    args.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    #args.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     args.script_folder = os.path.dirname(os.path.abspath(__file__))
 
     print(str(args))
-    main(args)
+    #search(args)
+    infer(args, "../experiment/Oracle_NN/Oracle_object/predict_trainindex.npy")
     

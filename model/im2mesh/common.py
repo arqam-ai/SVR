@@ -141,17 +141,17 @@ def get_nearest_neighbors_indices_batch(points_src, points_tgt, k=1):
     return indices, distances
 
 
-def normalize_imagenet(x):
-    ''' Normalize input images according to ImageNet standards.
+# def normalize_imagenet(x):
+#     ''' Normalize input images according to ImageNet standards.
 
-    Args:
-        x (tensor): input images
-    '''
-    x = x.clone()
-    x[:, 0] = (x[:, 0] - 0.485) / 0.229
-    x[:, 1] = (x[:, 1] - 0.456) / 0.224
-    x[:, 2] = (x[:, 2] - 0.406) / 0.225
-    return x
+#     Args:
+#         x (tensor): input images
+#     '''
+#     x = x.clone()
+#     x[:, 0] = (x[:, 0] - 0.485) / 0.229
+#     x[:, 1] = (x[:, 1] - 0.456) / 0.224
+#     x[:, 2] = (x[:, 2] - 0.406) / 0.225
+#     return x
 
 
 def make_3d_grid(bb_min, bb_max, shape):

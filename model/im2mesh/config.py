@@ -7,11 +7,7 @@ from model.im2mesh import psgn
 
 
 method_dict = {
-#   'onet': onet,
-#   'r2n2': r2n2,
     'psgn': psgn,
-#    'pix2mesh': pix2mesh,
-#    'dmc': dmc,
 }
 
 

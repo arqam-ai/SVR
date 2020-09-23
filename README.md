@@ -67,7 +67,39 @@ Launch the experiment
 |             AtlasNet 1 sphere             |               3 /   512 / 1024                | random  3d sphere |                0.107628                |    3e-3/ 30     | 64         | 12 min(in P100)  | 70          |      |
 |            AtlasNet 16 patches            |               3 /   512 / 1024                | random  2d square |                0.107672                |    3e-3/ 30     | 64         | 16min(in P100)   | 70          |      |
 
+#### model detail:
 
+resnet  atlasnet coderepo resnet
+
+currently all the initialization are all default 
+
+##### ##Initialization
+
+check the PyTorch module to see their default initialization https://github.com/pytorch/pytorch/tree/master/torch/nn/modules
+
+For Conv2d 
+
+```python
+for m in self.modules():
+    if isinstance(m, nn.Conv2d):
+        nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
+```
+
+For Linear 
+
+```python
+init.kaiming_uniform_(self.weight, a=math.sqrt(5))
+if self.bias is not None:
+        fan_in, _ = init._calculate_fan_in_and_fan_out(self.weight)
+        bound = 1 / math.sqrt(fan_in)
+        init.uniform_(self.bias, -bound, bound)
+```
+
+
+
+
+
+https://github.com/pytorch/vision/blob/master/torchvision/models/resnet.py
 
 ## Save models
 

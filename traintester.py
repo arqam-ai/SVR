@@ -18,6 +18,7 @@ import time
 import utils.plot_image_grid as plot_image_grid
 from utils.plot_log import plot_log as plot_log
 from dataset.dataset import what3d_dataset
+from torchviz import make_dot
 
 class Stats(object):
     def __init__(self):
@@ -52,11 +53,10 @@ class BN_Stats(object):
 
 class TrainTester(object):
 
-    def __init__(self, netG, criterion_G,  criterion_C, optmizer_G, lr_scheduler_G, alpha, logger, args):
+    def __init__(self, netG, criterion_G, optmizer_G, lr_scheduler_G, logger, args):
         self.netG= netG
         self.model = args.model
         self.criterion_G = criterion_G
-        self.criterion_C = criterion_C
         self.optimizer_G = optmizer_G
         self.logger = logger
         self.lr_scheduler_G = lr_scheduler_G
@@ -76,11 +76,7 @@ class TrainTester(object):
 
         self.stats_lr_itertrain = Stats()
         self.finalchamferloss = Stats()
-        self.bn1_stats = BN_Stats("bn1")
-        self.bn6_stats = BN_Stats("bn6")
-        self.bn_stats_epoch = range(0, self.total_epochs, args.bnstats_step)
 
-        self.hk_handles = []
         self.use_manifold = args.use_manifold
         self.running_loss = None
         self.running_factor = 0.9
@@ -93,33 +89,24 @@ class TrainTester(object):
         self.stddev = args.stddev
         self.lambda_loss_primitive = args.lambda_loss_primitive
         self.lambda_loss_fine = args.lambda_loss_fine
-        self.lambda_loss_manifold = args.lambda_loss_manifold
         self.save_results = args.save_results
-        self.snapshot_dir = args.snapshot_dir
         self.log_dir = args.log_dir
-        self.output_dir = args.output_dir
-        self.vis_dir = os.path.join(args.output_dir,'final_vis')
+        self.vis_dir = os.path.join(args.log_dir,'final_vis')
         self.tensorboard_dir = os.path.join(self.log_dir,'scalar')
         self.stats_dir = os.path.join(self.log_dir,'stats')
+        self.plot_graph = False
 
-        self.minloss = {}
-        self.read_view = args.read_view
         self.folding_twice = args.folding_twice
-        Path(self.snapshot_dir).mkdir(parents=True, exist_ok=True)
         Path(self.log_dir).mkdir(parents=True, exist_ok=True)
-        Path(self.output_dir).mkdir(parents=True, exist_ok=True)
         Path(self.tensorboard_dir).mkdir(parents=True, exist_ok=True)
         Path(self.vis_dir).mkdir(parents=True, exist_ok=True)
         Path(self.stats_dir).mkdir(parents=True, exist_ok=True)
 
-        self.image_saver = plot_image_grid.NumpytoPNG(self.vis_dir)	
         self.tensorboard = args.tensorboard
         if self.tensorboard:
             self.writer = SummaryWriter(self.tensorboard_dir)
         self.checkpoint_model = args.checkpoint_model
         self.checkpoint_solver = args.checkpoint_solver
-        self.testing = args.test
-        self.if_BNstats = args.if_BNstats
 
         if self.checkpoint_model:
             self.logger.info("Loading model checkpoint ...")
@@ -128,6 +115,14 @@ class TrainTester(object):
         if self.checkpoint_solver:
             self.logger.info("Loading solver checkpoint ...")
             self.optimizer_G.load_state_dict(torch.load(self.checkpoint_solver))
+
+        # self.if_BNstats = args.if_BNstats
+        # if self.if_BNstats:
+        #     self.bn1_stats = BN_Stats("bn1")
+        #     self.bn6_stats = BN_Stats("bn6")
+        #     self.bn_stats_epoch = range(0, self.total_epochs, args.bnstats_step)
+        #     self.hk_handles = []
+
 
     def invoke_epoch_callback(self):
         if len(self.epoch_callbacks)>0:
@@ -184,7 +179,7 @@ class TrainTester(object):
             # (1) Update Image&PCG network:                   #
             ###################################################
             self.netG.zero_grad()
-            if self.model == "foldingres6" or self.model == "foldingres18":
+            if self.model == "foldingres":
                 ptcloud_pred_primitive, ptcloud_pred_fine, _ , _ = self.netG(image)
                 loss_ptc_fine = self.criterion_G(ptcloud_pred_fine, ptcloud)
 
@@ -207,6 +202,11 @@ class TrainTester(object):
                 loss_ptc_fine = self.criterion_G(ptcloud_pred_fine, ptcloud)
                 batch_fineCD_loss = self.lambda_loss_fine * loss_ptc_fine.item()
                 loss_all = self.lambda_loss_fine * loss_ptc_fine
+
+            if not self.plot_graph:
+                graph = make_dot(ptcloud_pred_fine)
+                graph.render(os.path.join(self.log_dir, "graph"), format="png")
+                self.plot_graph = True
 
             loss_all.backward()
             self.optimizer_G.step()
@@ -263,7 +263,7 @@ class TrainTester(object):
                 Variable(ptcloud).to(self.device), \
 
             with torch.set_grad_enabled(False):
-                if self.model == "foldingres6" or self.model == "foldingres18":
+                if self.model == "foldingres":
                     _, ptcloud_pred_fine, codeword, _ = self.netG(image)
                 elif self.model == 'psgn':
                     ptcloud_pred_fine, codeword = self.netG(image)
@@ -285,8 +285,6 @@ class TrainTester(object):
                 #np.save('%s/codeword_%04d.npy'%(self.vis_dir, batch_idx),code)
                 img = image.cpu()
                 what3d_dataset.data_visualizer(pc_orig, pc2, img, type, self.vis_dir, batch_idx)
-#                img = img.numpy()
-#                self.image_saver.save(img)
 
             batch_idx += 1
             chamfer_loss += loss_ptc_fine.item()     
@@ -312,7 +310,6 @@ class TrainTester(object):
 
     def run(self, train_loader, test_loader, val_loader):
 
-        
         self.logger.info('Network Architecture:')
         self.logger.info(str(self.netG))
         sys.stdout.flush()
@@ -321,61 +318,31 @@ class TrainTester(object):
         # torch.mean(batch)  torch.mean/max/var/min(channel)
 
         for epoch in range(1, self.total_epochs+1):
-            if self.use_manifold:
-                new_train_loss = self.manifold_train(
-                    epoch=epoch,
-                    loader=train_loader,
-                )
-        
-                new_val_loss = self.manifold_test(
-                    epoch=epoch,
-                    loader=val_loader,
-                    type = 'val'
-                )
-            else:
-#######################  BN statistics ##########################
-                if epoch in self.bn_stats_epoch and self.if_BNstats:
-                    self.hook_bn(self.bn1_stats, mode='enable',
-                                 target_block='G1', target_layer=["bn1"])
-                    self.hook_bn(self.bn6_stats, mode='enable',
-                                 target_block='G1', target_layer=["bn6"])
-########################    Train    ############################
-                new_train_loss = self.train(
-                    epoch=epoch,
-                    loader=train_loader,
-                )
-######################## BN statistics END #######################                
-                if epoch in self.bn_stats_epoch and self.if_BNstats:
-                    self.hook_bn(mode='disable')
-                    self.bn1_stats.save(os.path.join(self.stats_dir, "epoch%d_layer_%s_input.npz"%(epoch,"bn1")))
-                    self.bn6_stats.save(os.path.join(self.stats_dir, "epoch%d_layer_%s_input.npz"%(epoch,"bn6")))
-                    
-                new_val_loss = self.test(
-                    epoch=epoch,
-                    loader=val_loader,
-                    type = 'val'
-                )
-
+#########################    Train    ############################
+            new_train_loss = self.train(
+                epoch=epoch,
+                loader=train_loader,
+            )
+######################### Validation #############################            
+            new_val_loss = self.test(
+                epoch=epoch,
+                loader=val_loader,
+                type = 'val'
+            )
+################## Save Model best in validation ######################## 
             if new_val_loss < self.val_loss:
                 self.logger.info('Epoch %d saving checkpoint .... val epoch loss %f' % (epoch, new_val_loss))
-                #self.minloss['trainloss'] = (epoch, new_train_loss)
-                # torch.save(self.netI.state_dict(), os.path.join(self.snapshot_dir, "model_image_train_best.pth"))
-                torch.save(self.netG.state_dict(), os.path.join(self.snapshot_dir, "model_train_best.pth"))
-                torch.save(self.optimizer_G.state_dict(), os.path.join(self.snapshot_dir,"solver_train_best.pth"))
+                torch.save(self.netG.state_dict(), os.path.join(self.log_dir, "model_train_best.pth"))
+                torch.save(self.optimizer_G.state_dict(), os.path.join(self.log_dir,"solver_train_best.pth"))
                 self.val_loss = new_val_loss
+
+############################ Test ########################
             if epoch % self.test_per_n_epoch == 0 or epoch == 1:
-                if self.use_manifold:
-                    self.manifold_test(
-                        epoch=epoch,
-                        loader=test_loader,
-                        type = 'test'
-                    )
-                else:
-                    self.test(
-                        epoch=epoch,
-                        loader=test_loader,
-                        type = 'test'
-                    )
+                self.test(
+                    epoch=epoch,
+                    loader=test_loader,
+                    type = 'test'
+                )
                 self.invoke_epoch_callback()
                 plot_log(self.stats_dir, ["stats_finecd_epochtest.npz"])
             self.lr_scheduler_G.step()
@@ -383,6 +350,16 @@ class TrainTester(object):
         self.done = True
 
 
+# #######################  BN statistics ##########################
+#             if epoch in self.bn_stats_epoch and self.if_BNstats:
+#                 self.hook_bn(self.bn1_stats, mode='enable',
+#                                 target_block='G1', target_layer=["bn1"])
+#                 self.hook_bn(self.bn6_stats, mode='enable',
+#                                 target_block='G1', target_layer=["bn6"])
 
 
-
+# ######################## BN statistics END #######################                
+#             if epoch in self.bn_stats_epoch and self.if_BNstats:
+#                 self.hook_bn(mode='disable')
+#                 self.bn1_stats.save(os.path.join(self.stats_dir, "epoch%d_layer_%s_input.npz"%(epoch,"bn1")))
+#                 self.bn6_stats.save(os.path.join(self.stats_dir, "epoch%d_layer_%s_input.npz"%(epoch,"bn6")))
