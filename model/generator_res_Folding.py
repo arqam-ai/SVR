@@ -14,8 +14,8 @@ import argparse
 import sys
 from matplotlib import pyplot as plt
 #from torchvision import models
-from model.resnet import resnet
-from layers import ResnetBlockFC
+import model.resnet as resnet
+from model.layers import ResnetBlockFC, ResnetBlockFCBN
 
 class GeneratorSingle(nn.Module):
     def __init__(self, dims):
@@ -27,25 +27,29 @@ class GeneratorSingle(nn.Module):
         return self.mlp.forward(X)
 
 class GeneratorResFC(nn.Module):
-    def __init__(self, hidden_neurons, bottleneck_size, num_layers, activation, input_dim = 2):
+    def __init__(self, hidden_neurons, bottleneck_size, num_layers, activation, input_dim = 2, remove_all_batchNorms=False):
 
         assert num_layers % 2 == 0, "The number of hidden layer in FoldingNet resnet decoder should be even"
         super(GeneratorResFC, self).__init__()
         self.hidden_neurons = hidden_neurons
         self.num_layers = num_layers
-        self.input_layer = nn.Linear([input_dim+bottleneck_size, self.hidden_neurons])
-        self.ResBlock_list = nn.ModuleList(
-            [ResnetBlockFC(size_in=hidden_neurons, size_out=hidden_neurons) for _ in range(0, self.num_layers/2)])
+        self.input_layer = nn.Linear(input_dim+bottleneck_size, self.hidden_neurons)
+        if remove_all_batchNorms:
+            self.ResBlock_list = nn.ModuleList(
+            [ResnetBlockFC(size_in=hidden_neurons, size_out=hidden_neurons) for _ in range(0, int(self.num_layers/2))])
+        else:
+            self.ResBlock_list = nn.ModuleList(
+            [ResnetBlockFCBN(size_in=hidden_neurons, size_out=hidden_neurons) for _ in range(0, int(self.num_layers/2))])
 
-        self.output_layer1 = nn.Linear([self.hidden_neurons, 64]) 
-        self.output_layer2 = nn.Linear([64, 3])  
+        self.output_layer1 = nn.Linear(self.hidden_neurons, 64) 
+        self.output_layer2 = nn.Linear(64, 3)  
         self.activation = nn.ReLU()
         
         
     def forward(self, X):
         X = self.activation(self.input_layer(X))
 
-        for i in range(0, self.num_layers/2):
+        for i in range(0, int(self.num_layers/2)):
             X = self.ResBlock_list[i](X)
            
         X = self.activation(self.output_layer1(X))
@@ -58,7 +62,7 @@ class GeneratorResFC(nn.Module):
 class GeneratorVanilla(nn.Module):
 
     def __init__(self, grid_dims, hidden_neurons, num_layers, 
-                 bottleneck_size, class_num, device, folding_twice = False):
+                 bottleneck_size, class_num, device, folding_twice=False, remove_all_batchNorms=False):
         
         super(GeneratorVanilla,self).__init__()
         u = (torch.arange(0., grid_dims[0]) / grid_dims[0] - 0.5).repeat(grid_dims[1])
@@ -66,13 +70,15 @@ class GeneratorVanilla(nn.Module):
 
         self.folding_twice = folding_twice
         self.encoder = resnet.resnet18(pretrained=False, num_classes=bottleneck_size)
-        self.grid = torch.stack((u, v), 1)
+        self.grid = torch.stack((u, v), 1).to(device)
         self.N = grid_dims[0] * grid_dims[1]
 
-        self.G1 = GeneratorResFC(hidden_neurons, bottleneck_size, num_layers, activation, input_dim = 2)
+        self.G1 = GeneratorResFC(hidden_neurons, bottleneck_size, num_layers, 
+                activation='relu', input_dim = 2, remove_all_batchNorms = remove_all_batchNorms)
         
         if self.folding_twice:
-            self.G2 = GeneratorResFC(hidden_neurons, bottleneck_size, num_layers, activation, input_dim = 3)
+            self.G2 = GeneratorResFC(hidden_neurons, bottleneck_size, num_layers, 
+                       activation='relu', input_dim = 3, remove_all_batchNorms = remove_all_batchNorms)
             
         self.classifier = nn.Linear(512, class_num)
           

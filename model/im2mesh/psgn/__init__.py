@@ -1,7 +1,7 @@
 from model.im2mesh.psgn import (
-    config, generation, training, models
+    config, models
 )
 
 __all__ = [
-    config, generation, training, models
+    config, models
 ]

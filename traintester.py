@@ -17,8 +17,11 @@ from pathlib import Path
 import time
 import utils.plot_image_grid as plot_image_grid
 from utils.plot_log import plot_log as plot_log
-from dataset.dataset import what3d_dataset
-from torchviz import make_dot
+from dataset.dataset import what3d_dataset_views
+from graphviz import Digraph
+#from torchviz import make_dot
+from utils.utils import make_dot
+import utils.hiddenlayer.hiddenlayer as hl
 
 class Stats(object):
     def __init__(self):
@@ -77,7 +80,6 @@ class TrainTester(object):
         self.stats_lr_itertrain = Stats()
         self.finalchamferloss = Stats()
 
-        self.use_manifold = args.use_manifold
         self.running_loss = None
         self.running_factor = 0.9
         self.epoch_callbacks = [self.save_stats]
@@ -85,8 +87,6 @@ class TrainTester(object):
         self.val_loss = float("inf")
         
         self.device = args.device
-        self.mean = args.mean
-        self.stddev = args.stddev
         self.lambda_loss_primitive = args.lambda_loss_primitive
         self.lambda_loss_fine = args.lambda_loss_fine
         self.save_results = args.save_results
@@ -203,10 +203,12 @@ class TrainTester(object):
                 batch_fineCD_loss = self.lambda_loss_fine * loss_ptc_fine.item()
                 loss_all = self.lambda_loss_fine * loss_ptc_fine
 
-            if not self.plot_graph:
-                graph = make_dot(ptcloud_pred_fine)
-                graph.render(os.path.join(self.log_dir, "graph"), format="png")
-                self.plot_graph = True
+            # if not self.plot_graph:
+            #     graph = make_dot(ptcloud_pred_fine)
+            #     graph.engine='dot'
+            #     graph.format='pdf'
+            #     print(graph.render(filename=os.path.join(self.log_dir, "net.gv")))
+            #     self.plot_graph = True
 
             loss_all.backward()
             self.optimizer_G.step()
@@ -284,7 +286,7 @@ class TrainTester(object):
                 #np.save('%s/fineptcloud_%04d.npy'%(self.vis_dir, batch_idx),pc2)
                 #np.save('%s/codeword_%04d.npy'%(self.vis_dir, batch_idx),code)
                 img = image.cpu()
-                what3d_dataset.data_visualizer(pc_orig, pc2, img, type, self.vis_dir, batch_idx)
+                what3d_dataset_views.data_visualizer(pc_orig, pc2, img, type, self.vis_dir, batch_idx)
 
             batch_idx += 1
             chamfer_loss += loss_ptc_fine.item()     
@@ -310,9 +312,6 @@ class TrainTester(object):
 
     def run(self, train_loader, test_loader, val_loader):
 
-        self.logger.info('Network Architecture:')
-        self.logger.info(str(self.netG))
-        sys.stdout.flush()
         # add a hook_fn as a member, then when epoch condition enable hook otherwise remove, 
         # consider save it as use numpy key, 'epoch': "mean" 2x2350x512 "var"2x2350x4   
         # torch.mean(batch)  torch.mean/max/var/min(channel)

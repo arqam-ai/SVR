@@ -44,12 +44,12 @@ def draw_pts(pts, clr, cmap, ax=None,sz=20):
     pts -= np.mean(pts,axis=0) #demean
 
     ax.set_alpha(255)
-    ax.set_aspect('equal')
+    #ax.set_aspect('equal')
     min_lim = pts.min()
     max_lim = pts.max()
-    ax.set_xlim3d(min_lim,max_lim)
-    ax.set_ylim3d(min_lim,max_lim)
-    ax.set_zlim3d(min_lim,max_lim)
+    ax.set_xlim3d(-1,1)
+    ax.set_ylim3d(-1,1)
+    ax.set_zlim3d(-1,1)
 
     if cmap is None and clr is not None:
         #print(clr.shape)

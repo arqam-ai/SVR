@@ -1,6 +1,6 @@
 import os
 from model.im2mesh.psgn import models
-from model.resnet import resnet
+import model.resnet as resnet
 from model.im2mesh.psgn.models.decoder import Decoder
 
 

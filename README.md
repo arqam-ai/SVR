@@ -85,7 +85,7 @@ for m in self.modules():
         nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
 ```
 
-For Linear 
+For Linear, For conv1d
 
 ```python
 init.kaiming_uniform_(self.weight, a=math.sqrt(5))
@@ -95,11 +95,11 @@ if self.bias is not None:
         init.uniform_(self.bias, -bound, bound)
 ```
 
-
-
-
-
 https://github.com/pytorch/vision/blob/master/torchvision/models/resnet.py
+
+How to initialize weights in Pytorch
+
+https://stackoverflow.com/questions/49433936/how-to-initialize-weights-in-pytorch
 
 ## Save models
 
@@ -109,3 +109,14 @@ zip -r object_models.zip object_models
 # Download the object_models.zip
 ```
 
+###DEMO
+
+Visualization for point cloud 
+
+https://github.com/zekunhao1995/PointFlowRenderer
+
+https://github.com/YefanZhou/Pointcloud-Learning/blob/master/utils/visualize.py
+
+Visualization for network
+
+https://github.com/waleedka/hiddenlayer
