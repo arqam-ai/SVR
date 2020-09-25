@@ -26,6 +26,7 @@ abspath = os.path.dirname(os.path.abspath(__file__))
 def main(args, logger):
 
     # load data
+    '''
     starter_time = time.time()
     kwargs = {'num_workers':4, 'pin_memory':True}
     logger.info("loading train data ...")
@@ -60,7 +61,7 @@ def main(args, logger):
                 points_num=args.pts_num, mode = args.mode),
                 batch_size=args.val_batch_size, shuffle=False,**kwargs)
     logger.info("Initialize cache={}".format(time.time()-starter_time))
-
+    '''
     
     if args.model == "foldingres":
         netG = GeneratorVanilla(
