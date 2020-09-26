@@ -26,7 +26,6 @@ abspath = os.path.dirname(os.path.abspath(__file__))
 def main(args, logger):
 
     # load data
-    '''
     starter_time = time.time()
     kwargs = {'num_workers':4, 'pin_memory':True}
     logger.info("loading train data ...")
@@ -61,7 +60,6 @@ def main(args, logger):
                 points_num=args.pts_num, mode = args.mode),
                 batch_size=args.val_batch_size, shuffle=False,**kwargs)
     logger.info("Initialize cache={}".format(time.time()-starter_time))
-    '''
     
     if args.model == "foldingres":
         netG = GeneratorVanilla(
@@ -84,8 +82,12 @@ def main(args, logger):
         
 
     netG.to(args.device)
-    graph = hl.build_graph(netG, torch.zeros([1, 3, args.image_size, args.image_size]).to(args.device)  )
-    graph.save(os.path.join(args.log_dir, "graph.pdf"))
+    # try:
+    #     graph = hl.build_graph(netG, torch.zeros([1, 3, args.image_size, args.image_size]).to(args.device)  )
+    #     graph.save(os.path.join(args.log_dir, "graph.pdf"))
+    # except
+    #     logger.info("Fail to draw network graph") 
+    #     pass
 
     logger.info('Number of parameters={}'.format(count_parameter_num(netG.parameters())))
     logger.info('Network Architecture:')

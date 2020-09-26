@@ -31,29 +31,39 @@ class GeneratorResFC(nn.Module):
 
         assert num_layers % 2 == 0, "The number of hidden layer in FoldingNet resnet decoder should be even"
         super(GeneratorResFC, self).__init__()
+        self.remove_all_batchNorms = remove_all_batchNorms
         self.hidden_neurons = hidden_neurons
         self.num_layers = num_layers
         self.input_layer = nn.Linear(input_dim+bottleneck_size, self.hidden_neurons)
+        self.output_layer0 = nn.Linear(self.hidden_neurons, 64) 
+        self.output_layer1 = nn.Linear(64, 3)  
+        self.activation0 = nn.ReLU()
+        self.activation1 = nn.ReLU()
+
         if remove_all_batchNorms:
             self.ResBlock_list = nn.ModuleList(
             [ResnetBlockFC(size_in=hidden_neurons, size_out=hidden_neurons) for _ in range(0, int(self.num_layers/2))])
         else:
+            self.bn0 = nn.BatchNorm1d(self.hidden_neurons)
+            self.bn1 = nn.BatchNorm1d(64)
             self.ResBlock_list = nn.ModuleList(
             [ResnetBlockFCBN(size_in=hidden_neurons, size_out=hidden_neurons) for _ in range(0, int(self.num_layers/2))])
 
-        self.output_layer1 = nn.Linear(self.hidden_neurons, 64) 
-        self.output_layer2 = nn.Linear(64, 3)  
-        self.activation = nn.ReLU()
-        
-        
     def forward(self, X):
-        X = self.activation(self.input_layer(X))
+        if self.remove_all_batchNorms:
+            X = self.activation0(self.input_layer(X))
+        else:
+            X = self.activation0(self.bn0(self.input_layer(X).permute(0, 2, 1)).permute(0, 2, 1))
 
         for i in range(0, int(self.num_layers/2)):
             X = self.ResBlock_list[i](X)
-           
-        X = self.activation(self.output_layer1(X))
-        X = self.output_layer2(X)
+        
+        if self.remove_all_batchNorms:
+            X = self.activation1(self.output_layer0(X))
+        else:
+            X = self.activation1(self.bn1(self.output_layer0(X).permute(0, 2, 1)).permute(0, 2, 1))
+
+        X = self.output_layer1(X)
         
         return X
 

@@ -23,7 +23,8 @@ class ResnetBlockFC(nn.Module):
 
         self.fc_0 = nn.Linear(size_in, size_h)
         self.fc_1 = nn.Linear(size_h, size_out)
-        self.actvn = nn.ReLU()
+        self.actvn0 = nn.ReLU()
+        self.actvn1 = nn.ReLU()
 
         if size_in == size_out:
              self.shortcut = None
@@ -32,7 +33,7 @@ class ResnetBlockFC(nn.Module):
 
     def forward(self, x):
 
-        net = self.actvn(self.fc_0(x))
+        net = self.actvn0(self.fc_0(x))
         dx = self.fc_1(net)
 
         if self.shortcut is not None:
@@ -40,7 +41,7 @@ class ResnetBlockFC(nn.Module):
         else:
             x_s = x
 
-        return self.actvn(x_s + dx)
+        return self.actvn1(x_s + dx)
 
 class ResnetBlockFCBN(nn.Module):
     '''Fully connected ResNet Block class.
@@ -63,7 +64,8 @@ class ResnetBlockFCBN(nn.Module):
         self.bn_0 = nn.BatchNorm1d(size_h)
         self.bn_1 = nn.BatchNorm1d(size_out)
 
-        self.actvn = nn.ReLU()
+        self.actvn0 = nn.ReLU()
+        self.actvn1 = nn.ReLU()
 
         if size_in == size_out:
              self.shortcut = None
@@ -72,17 +74,17 @@ class ResnetBlockFCBN(nn.Module):
 
     def forward(self, x):
         
-        x = self.bn_0(self.fc_0(x).permute(0, 2, 1))
-        net = self.actvn(x.permute(0, 2, 1))
+        x_1 = self.bn_0(self.fc_0(x).permute(0, 2, 1))
+        net = self.actvn0(x_1.permute(0, 2, 1))
         net = self.bn_1(self.fc_1(net).permute(0, 2, 1))
-        dx = self.actvn(net.permute(0, 2, 1))
+        dx = net.permute(0, 2, 1)
 
         if self.shortcut is not None:
             x_s = self.shortcut(x)
         else:
             x_s = x
             
-        return x_s + dx
+        return self.actvn1(x_s + dx)
 
 ##### Layer block for onet 
 # Resnet Blocks

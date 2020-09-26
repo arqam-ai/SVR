@@ -18,10 +18,10 @@ import time
 import utils.plot_image_grid as plot_image_grid
 from utils.plot_log import plot_log as plot_log
 from dataset.dataset import what3d_dataset_views
-from graphviz import Digraph
+#from graphviz import Digraph
 #from torchviz import make_dot
-from utils.utils import make_dot
-import utils.hiddenlayer.hiddenlayer as hl
+#from utils.utils import make_dot
+#import utils.hiddenlayer.hiddenlayer as hl
 
 class Stats(object):
     def __init__(self):
@@ -104,7 +104,7 @@ class TrainTester(object):
 
         self.tensorboard = args.tensorboard
         if self.tensorboard:
-            self.writer = SummaryWriter(self.tensorboard_dir)
+            self.writer = SummaryWriter(comment=self.log_dir)
         self.checkpoint_model = args.checkpoint_model
         self.checkpoint_solver = args.checkpoint_solver
 
@@ -203,12 +203,9 @@ class TrainTester(object):
                 batch_fineCD_loss = self.lambda_loss_fine * loss_ptc_fine.item()
                 loss_all = self.lambda_loss_fine * loss_ptc_fine
 
-            # if not self.plot_graph:
-            #     graph = make_dot(ptcloud_pred_fine)
-            #     graph.engine='dot'
-            #     graph.format='pdf'
-            #     print(graph.render(filename=os.path.join(self.log_dir, "net.gv")))
-            #     self.plot_graph = True
+            if not self.plot_graph:
+                self.writer.add_graph(self.netG, image)
+                self.plot_graph = True
 
             loss_all.backward()
             self.optimizer_G.step()
@@ -227,7 +224,7 @@ class TrainTester(object):
             # collect stats
             self.train_iter += 1
             self.stats_finecd_itertrain.push(self.train_iter, loss = batch_fineCD_loss)
-            self.writer.add_scalar('Loss/train', batch_fineCD_loss, self.train_iter)
+            self.writer.add_scalar('Loss/train/iter', batch_fineCD_loss, self.train_iter)
             # logger
             if self.verbose_per_n_batch>0 and batch_idx % self.verbose_per_n_batch==0:
                 self.logger.info((
@@ -240,7 +237,7 @@ class TrainTester(object):
                     batch_fineCD_loss, lr))
 
         self.stats_finecd_epochtrain.push(epoch, loss = loss_sum_fineCD/float(len(loader)))
-
+        self.writer.add_scalar('Loss/train/epoch', loss_sum_fineCD/float(len(loader)), epoch)
         self.logger.info("======== Epoch {:<3d} ========".format(epoch))
         self.logger.info("Train: avg overall={:.4f}, avg fineCD = {:.4f}, time = {:.3f}".format(
             loss_sum / float(len(loader)),
@@ -311,7 +308,7 @@ class TrainTester(object):
         return chamfer_loss
 
     def run(self, train_loader, test_loader, val_loader):
-
+        
         # add a hook_fn as a member, then when epoch condition enable hook otherwise remove, 
         # consider save it as use numpy key, 'epoch': "mean" 2x2350x512 "var"2x2350x4   
         # torch.mean(batch)  torch.mean/max/var/min(channel)
@@ -345,6 +342,8 @@ class TrainTester(object):
                 self.invoke_epoch_callback()
                 plot_log(self.stats_dir, ["stats_finecd_epochtest.npz"])
             self.lr_scheduler_G.step()
+
+        self.writer.close()
         self.save_stats()
         self.done = True
 

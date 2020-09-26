@@ -1,5 +1,5 @@
 # Mutual Parameter
-MODE="object"                          # dataset mode 
+MODE="viewer"                          # dataset mode 
 SAMPLERATIO=1.0                        # ratio to sample the dataset
 EPOCH=70                               # total epoch for training 
 TRAINBATCH=64                          # training batch size 
