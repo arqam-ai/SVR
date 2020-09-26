@@ -8,6 +8,11 @@ mkdir What3D
 wget https://lmb.informatik.uni-freiburg.de/data/what3d/renderings.zip -O What3D/renderings.zip
 gdrive_download 1UNh7ySRQsZ8qysz_GB9zP9ruskZLje2B What3D/splits.zip
 gdrive_download 1wS5B7k2rKB5JsvNKfjs9aOjv3-FQiOEF What3D/ptcloud_object.npz
+gdrive_download 1-T7tYfQLfMfwnFdaMTnY1EmdTZHF90rJ What3D/ptcloud_0.npz
+gdrive_download 1fEIbXDeta7NK2hzlnFYS70s4ZQQ7WpvE What3D/ptcloud_1.npz
+gdrive_download 1I2JlfI1qTYO_vigdG_EUSEf4ptcNj6cs What3D/ptcloud_2.npz
+gdrive_download 1PzT1sfb9MbJvY8Cm7MMR9WUvUDIZzxV1 What3D/ptcloud_3.npz
+gdrive_download 1vWImbLn-t8arL1PkTTho0yhoR9Y9DJZM What3D/ptcloud_4.npz
 gdrive_download 1Rw0S0j-I5bsi44zQtw8J1DsI8JiiuIEY What3D/label.npz
 cd What3D
 unzip renderings.zip
