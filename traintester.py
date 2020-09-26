@@ -18,10 +18,7 @@ import time
 import utils.plot_image_grid as plot_image_grid
 from utils.plot_log import plot_log as plot_log
 from dataset.dataset import what3d_dataset_views
-#from graphviz import Digraph
-#from torchviz import make_dot
-#from utils.utils import make_dot
-#import utils.hiddenlayer.hiddenlayer as hl
+
 
 class Stats(object):
     def __init__(self):

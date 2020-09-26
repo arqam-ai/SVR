@@ -53,7 +53,9 @@ Launch the experiment
 ./object_models.sh
 ```
 
-## Models
+## Experiment 
+
+####model version 1
 
 |                   Model                   | Hidden layers/Hidden width/latent space width |       Grid        |              Chamfer Loss              | LR / Decay Step | Batch Size | Time   per epoch | Total Epoch |      |
 | :---------------------------------------: | :-------------------------------------------: | :---------------: | :------------------------------------: | :-------------: | ---------- | ---------------- | ----------- | ---- |
@@ -66,6 +68,24 @@ Launch the experiment
 |       AtlasNet 4 patches without BN       |               3 /   512 / 1024                | random  2d square |                0.108662                |    3e-3/ 30     | 64         | 7.8min           | 70          |      |
 |             AtlasNet 1 sphere             |               3 /   512 / 1024                | random  3d sphere |                0.107628                |    3e-3/ 30     | 64         | 12 min(in P100)  | 70          |      |
 |            AtlasNet 16 patches            |               3 /   512 / 1024                | random  2d square |                0.107672                |    3e-3/ 30     | 64         | 16min(in P100)   | 70          |      |
+
+####model version 2
+
+|           Model            | Hidden layers/Hidden width/latent space width | Batch Norm | Grid | Chamfer Loss | LR / Decay Step | Batch Size | Time   per epoch | Total Epoch |          | Status                          |
+| :------------------------: | :-------------------------------------------: | ---------- | :--: | :----------: | :-------------: | ---------- | ---------------- | ----------- | -------- | ------------------------------- |
+|         Oracle NN          |                     0.048                     |            |      |              |                 |            |                  |             |          |                                 |
+| Folding + 6 hidded + no BN |                6 / 512 /  512                 | no         |      |              |    1e-3/ 30     | 64         | 12 min           | 70          | 14949MiB | running in seu/object_models_v2 |
+|  Folding + 6 hidded + BN   |                6 / 512 /  512                 | Yes        |      |              |    1e-3/ 30     | 64         |                  |             | 8737MiB  | running in seu/object_models_v2 |
+|  Folding + 6 hidded + BN   |                6 / 512 /  512                 | Yes        |      |              |    1e-3/ 30     | 32         |                  |             | 6517MiB  | running in seu/object_models_v2 |
+|                            |                                               |            |      |              |                 |            |                  |             |          |                                 |
+|                            |                                               |            |      |              |                 |            |                  |             |          |                                 |
+|                            |                                               |            |      |              |                 |            |                  |             |          |                                 |
+|                            |                                               |            |      |              |                 |            |                  |             |          |                                 |
+|                            |                                               |            |      |              |                 |            |                  |             |          |                                 |
+
+
+
+
 
 #### model detail:
 
@@ -120,3 +140,6 @@ https://github.com/YefanZhou/Pointcloud-Learning/blob/master/utils/visualize.py
 Visualization for network
 
 https://github.com/waleedka/hiddenlayer
+
+how to calcuate model size 
+
