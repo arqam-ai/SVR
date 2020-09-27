@@ -101,7 +101,9 @@ class TrainTester(object):
 
         self.tensorboard = args.tensorboard
         if self.tensorboard:
-            self.writer = SummaryWriter(comment=self.log_dir)
+            tensor_comment = "{}_{}_{}_BS{}_noBN{}_LR{}".format(args.model, args.mode, args.train_batch_size, 
+                                                    args.remove_all_batchNorms, args.lr_G)
+            self.writer = SummaryWriter(comment=tensor_comment)
         self.checkpoint_model = args.checkpoint_model
         self.checkpoint_solver = args.checkpoint_solver
 
