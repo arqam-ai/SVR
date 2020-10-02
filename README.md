@@ -83,7 +83,7 @@ Launch the experiment
 |                            |           |                |                                               |            |      |              |                 |            |                  |             |               |            |        |
 |  Folding + 6 hidded + BN   |           | viewer center  |                6 / 512 /  512                 | no         |      |   0.102078   |    1e-3/ 30     | 64         | 12min            | 70          | 8737MiB       |            | done   |
 |  Folding + 6 hidded + BN   |           | viewer center  |                6 / 512 /  512                 | Yes        |      |   0.099518   |    1e-3/ 30     | 64         |                  | 70          | 4729MiB       |            | done   |
-|  Folding + 6 hidded + BN   |           | viewer center  |                6 / 512 /  512                 | Yes        |      |   0.100486   |    1e-3/ 30     | 64         | 15min            | 70          | 4729MiB       |            | done   |
+|  Folding + 6 hidded + BN   |           | viewer center  |                6 / 512 /  512                 | Yes        |      |   0.100486   |    1e-3/ 30     | 32         | 15min            | 70          | 4729MiB       |            | done   |
 |   AtlasNet + 6 hidden+BN   |           | viewer center  |                6 / 512 /  512                 | Yes        |      |   0.102212   |    1e-3/ 30     | 64         | 15min            | 70          | 8737MiB       |            |        |
 
 
