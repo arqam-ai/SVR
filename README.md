@@ -71,17 +71,20 @@ Launch the experiment
 
 ####model version 2
 
-|           Model            | Hidden layers/Hidden width/latent space width | Batch Norm | Grid | Chamfer Loss | LR / Decay Step | Batch Size | Time   per epoch | Total Epoch |          | Status                          |
-| :------------------------: | :-------------------------------------------: | ---------- | :--: | :----------: | :-------------: | ---------- | ---------------- | ----------- | -------- | ------------------------------- |
-|         Oracle NN          |                     0.048                     |            |      |              |                 |            |                  |             |          |                                 |
-| Folding + 6 hidded + no BN |                6 / 512 /  512                 | no         |      |              |    1e-3/ 30     | 64         | 12 min           | 70          | 14949MiB | running in seu/object_models_v2 |
-|  Folding + 6 hidded + BN   |                6 / 512 /  512                 | Yes        |      |              |    1e-3/ 30     | 64         |                  |             | 8737MiB  | running in seu/object_models_v2 |
-|  Folding + 6 hidded + BN   |                6 / 512 /  512                 | Yes        |      |              |    1e-3/ 30     | 32         |                  |             | 4729MiB  | running in seu/object_models_v2 |
-|                            |                                               |            |      |              |                 |            |                  |             |          |                                 |
-|                            |                                               |            |      |              |                 |            |                  |             |          |                                 |
-|                            |                                               |            |      |              |                 |            |                  |             |          |                                 |
-|                            |                                               |            |      |              |                 |            |                  |             |          |                                 |
-|                            |                                               |            |      |              |                 |            |                  |             |          |                                 |
+|           Model            | Exp index | mode           | Hidden layers/Hidden width/latent space width | Batch Norm | Grid | Chamfer Loss | LR / Decay Step | Batch Size | Time   per epoch | Total Epoch | GPU Occupancy | Model Size | Status |
+| :------------------------: | --------- | -------------- | :-------------------------------------------: | ---------- | :--: | :----------: | :-------------: | ---------- | ---------------- | ----------- | ------------- | ---------- | ------ |
+|         Oracle NN          |           | object center  |                                               |            |      |   0.08685    |                 |            |                  |             |               |            |        |
+| Folding + 6 hidded + no BN |           | object  center |                6 / 512 /  512                 | no         |      |   0.101191   |    1e-3/ 30     | 64         | 12 min           | 70          | 8737MiB       |            | done   |
+|  Folding + 6 hidded + BN   |           | object center  |                6 / 512 /  512                 | Yes        |      |   0.099870   |    1e-3/ 30     | 64         | 14 min           | 70          | 8737MiB       |            | done   |
+|  Folding + 6 hidded + BN   |           | object center  |                6 / 512 /  512                 | Yes        |      |   0.100859   |    1e-3/ 30     | 32         | 30 min           | 70          | 4729MiB       |            | done   |
+|  Folding + 6 hidded + BN   |           | object center  |                  6/1024/1024                  | Yes        |      |   0.100688   |    1e-3/ 30     | 32         | 30 min           | 70          |               |            | done   |
+|   AtlasNet + 6 hidden+BN   |           | object center  |                6 / 512 /  512                 | Yes        |      |   0.102240   |    1e-3/ 30     | 64         | 16min            | 70          |               |            | done   |
+|   AtlasNet + 6 hidden+BN   |           | object center  |                  6/1024/1024                  | Yes        |      |   0.102958   |    1e-3/ 30     | 32         | 64min            | 70          |               |            | done   |
+|                            |           |                |                                               |            |      |              |                 |            |                  |             |               |            |        |
+|  Folding + 6 hidded + BN   |           | viewer center  |                6 / 512 /  512                 | no         |      |   0.102078   |    1e-3/ 30     | 64         | 12min            | 70          | 8737MiB       |            | done   |
+|  Folding + 6 hidded + BN   |           | viewer center  |                6 / 512 /  512                 | Yes        |      |   0.099518   |    1e-3/ 30     | 64         |                  | 70          | 4729MiB       |            | done   |
+|  Folding + 6 hidded + BN   |           | viewer center  |                6 / 512 /  512                 | Yes        |      |   0.100486   |    1e-3/ 30     | 64         | 15min            | 70          | 4729MiB       |            | done   |
+|   AtlasNet + 6 hidden+BN   |           | viewer center  |                6 / 512 /  512                 | Yes        |      |   0.102212   |    1e-3/ 30     | 64         | 15min            | 70          | 8737MiB       |            |        |
 
 
 
