@@ -23,39 +23,39 @@ CUDA6=1                                # gpu id for model  batch size = 32 foldi
 
 
 # model4 atlasnet BN hidden 6 batch size = 64
-CUDA_VISIBLE_DEVICES=$CUDA1 python ../../train.py \
-                          --data-basedir '../../../What3D' \
-						  --ptcloud-path "ptcloud_n.npz" \
-             		      --model "atlasnet"      `# model Info`\
-                          --SVR \
-                          --num_layers 2 \
-                          --hidden_neurons 512 \
-                          --bottleneck_size 512 \
-                          `# --remove_all_batchNorms`\
-						  --nb_primitives 4       `# atlasnet Info 1 4 16`\
- 						  --template_type "SQUARE" \
-                          --mode $MODE             `# dataset Info`\
-						  --image-size 224 \
-						  --view $VIEWS \
-						  --sample-ratio $SAMPLERATIO \
-                          --num-worker $NUM_WORKER \
-						  --total-epoch $EPOCH      `# training Info`\
-						  --train-batch-size $TRAINBATCH \
-						  --test-batch-size $TESTBATCH \
-						  --val-batch-size $VALBATCH \
-						  --verbose_per_n_batch 50 \
-						  --test_per_n_epoch $TEST_STEP \
-						  --lambda-loss-fine 1. \
-						  --lambda-loss-primitive 1. \
-                          --lr-G $LR \
-                          --momentum $MOMENTUM \
-                          --lr_decay_step $DECAYSTEP \
-                          --weight-decay $WEIGHTDECAY \
-						  --log-dir	'atlasnet_object_4square_lr2_random_ucb/'  `# logging Info`\
-						  --tensorboard \
-						  --save-results \
-						  --test \
-						  --train 
+# CUDA_VISIBLE_DEVICES=$CUDA1 python ../../train.py \
+#                           --data-basedir '../../../What3D' \
+# 						  --ptcloud-path "ptcloud_n.npz" \
+#              		      --model "atlasnet"      `# model Info`\
+#                           --SVR \
+#                           --num_layers 2 \
+#                           --hidden_neurons 512 \
+#                           --bottleneck_size 512 \
+#                           `# --remove_all_batchNorms`\
+# 						  --nb_primitives 4       `# atlasnet Info 1 4 16`\
+#  						  --template_type "SQUARE" \
+#                           --mode $MODE             `# dataset Info`\
+# 						  --image-size 224 \
+# 						  --view $VIEWS \
+# 						  --sample-ratio $SAMPLERATIO \
+#                           --num-worker $NUM_WORKER \
+# 						  --total-epoch $EPOCH      `# training Info`\
+# 						  --train-batch-size $TRAINBATCH \
+# 						  --test-batch-size $TESTBATCH \
+# 						  --val-batch-size $VALBATCH \
+# 						  --verbose_per_n_batch 50 \
+# 						  --test_per_n_epoch $TEST_STEP \
+# 						  --lambda-loss-fine 1. \
+# 						  --lambda-loss-primitive 1. \
+#                           --lr-G $LR \
+#                           --momentum $MOMENTUM \
+#                           --lr_decay_step $DECAYSTEP \
+#                           --weight-decay $WEIGHTDECAY \
+# 						  --log-dir	'atlasnet_object_4square_lr2_random_ucb/'  `# logging Info`\
+# 						  --tensorboard \
+# 						  --save-results \
+# 						  --test \
+# 						  --train 
 
 # model4 atlasnet BN hidden 6 batch size = 64
 CUDA_VISIBLE_DEVICES=$CUDA2 python ../../train.py \
