@@ -103,10 +103,10 @@ class TrainTester(object):
         self.tensorboard = args.tensorboard
         if self.tensorboard and self.if_train:
             if args.model == 'atlasnet':
-                tensor_comment = "{}_{}_BS{}_noBN{}_LR{}_NumL{}_{}{}_Width{}_latent{}".format(args.model, args.mode, args.train_batch_size, 
+                tensor_comment = "{}_{}_BS{}_noBN{}_LR{}_NumL{}_{}{}_Width{}_latent{}_NumP{}_TypeP_{}".format(args.model, args.mode, args.train_batch_size, 
                                                     args.remove_all_batchNorms, args.lr_G, 
                                                     args.num_layers, args.template_type, args.nb_primitives, 
-                                                    args.hidden_neurons, args.bottleneck_size)
+                                                    args.hidden_neurons, args.bottleneck_size, args.nb_primitives, args.template_type)
             else:
                 tensor_comment = "{}_{}_BS{}_noBN{}_LR{}_NumL{}_Width{}_latent{}".format(args.model, args.mode, args.train_batch_size, 
                                                     args.remove_all_batchNorms, args.lr_G, args.num_layers, 
