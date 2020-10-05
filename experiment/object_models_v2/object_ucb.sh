@@ -90,7 +90,7 @@ CUDA_VISIBLE_DEVICES=$CUDA2 python ../../train.py \
 						  --tensorboard \
 						  --save-results \
 						  --test \
-						  --train 
+						  --train &
 
 
 # model4 atlasnet BN hidden 6 batch size = 64
@@ -126,4 +126,4 @@ CUDA_VISIBLE_DEVICES=$CUDA3 python ../../train.py \
 						  --tensorboard \
 						  --save-results \
 						  --test \
-						  --train 
+						  --train &
