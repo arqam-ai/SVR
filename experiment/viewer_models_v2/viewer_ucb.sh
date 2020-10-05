@@ -2,9 +2,9 @@
 MODE="viewer"                          # dataset mode 
 SAMPLERATIO=1.0                        # ratio to sample the dataset
 EPOCH=70                               # total epoch for training 
-TRAINBATCH=32                          # training batch size 
-TESTBATCH=200                          # test batch size 
-VALBATCH=200                           # val batch size 
+TRAINBATCH=64                          # training batch size 
+TESTBATCH=64                          # test batch size 
+VALBATCH=64                           # val batch size 
 VIEWS="01234"                          # views
 LR=1e-3                                # learning rate
 MOMENTUM=0.9                           # momentum 
