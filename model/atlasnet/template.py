@@ -79,11 +79,12 @@ class SquareTemplate(Template):
         if not self.npoints == npoints:
             self.npoints = npoints
             vertices, faces = self.generate_square(np.sqrt(npoints))
-            self.mesh = pymesh.form_mesh(vertices=vertices, faces=faces)  # 10k vertices
-            self.vertex = torch.from_numpy(self.mesh.vertices).to(device).float()
+            #self.mesh = pymesh.form_mesh(vertices=vertices, faces=faces)  # 10k vertices
+            #self.vertex = torch.from_numpy(self.mesh.vertices).to(device).float()
+            self.vertex = torch.from_numpy(vertices).to(device).float()
             self.num_vertex = self.vertex.size(0)
             self.vertex = self.vertex.transpose(0,1).contiguous().unsqueeze(0)
-
+            
         return Variable(self.vertex[:, :2].contiguous().to(device))
 
     @staticmethod

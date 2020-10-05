@@ -1,6 +1,10 @@
 # Byte-compiled / optimized / DLL files
 **/__pycache__/
-
+**/sum_runs/
+**/runs/
+**/stats/
+**/final_vis/
+**/scalar/
 **/*.log
 
 # Jupyter Notebook
@@ -20,4 +24,5 @@
 **/img/*.png
 **/*.zip
 **/*.npz
+**/*.whl
 

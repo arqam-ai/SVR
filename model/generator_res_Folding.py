@@ -90,7 +90,7 @@ class GeneratorVanilla(nn.Module):
             self.G2 = GeneratorResFC(hidden_neurons, bottleneck_size, num_layers, 
                        activation='relu', input_dim = 3, remove_all_batchNorms = remove_all_batchNorms)
             
-        self.classifier = nn.Linear(512, class_num)
+        self.classifier = nn.Linear(bottleneck_size, class_num)
           
     def forward(self, X, view=None):
 

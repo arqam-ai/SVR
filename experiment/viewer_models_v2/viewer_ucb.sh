@@ -15,8 +15,8 @@ TEST_STEP=10                           # step to do test
 NUM_WORKER=4                 
 # CUDA 
 CUDA1=0                                # gpu id for model1  foldingres no BN hidden 6 
-CUDA2=1                                # gpu id for model1  foldingres BN hidden 6 
-CUDA3=1                                # gpu id for model1  batch size = 32 foldingres BN hidden 6
+CUDA2=0                                # gpu id for model1  foldingres BN hidden 6 
+CUDA3=0                                # gpu id for model1  batch size = 32 foldingres BN hidden 6
 
 
 # # model1  foldingres no BN hidden 6 batch size = 64

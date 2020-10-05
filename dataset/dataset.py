@@ -131,40 +131,56 @@ class what3d_dataset_views(Dataset):
 
     @staticmethod
     def data_visualizer(ptcloud, prediction, image, split_name, path, idx):
-        #clr = np.array([[252/255., 230/255., 201/255.]])
-        clr = colormap2d(32, 32)
-        #clr = np.repeat(clr, ptcloud.shape[1], axis =0)
-        fig = plt.figure(figsize=(10, 4))
-        ax = fig.add_subplot(131, projection='3d')
+
+        fig = plt.figure(figsize=(15, 4))
+
+        ax = fig.add_subplot(151)
+        if isinstance(image, np.ndarray):
+            image = image[0].transpose((1, 2, 0))
+        else: 
+            image = image[0].transpose(0,1)
+            image = image.transpose(1,2)
+
+        ax.imshow(image)
+        plt.axis("off")
+
+        ax = fig.add_subplot(152, projection='3d')
         ax.scatter(ptcloud[0,:,2], ptcloud[0,:,0], ptcloud[0,:,1], s= 2)
         ax.set_xlim([-0.5,0.5])
         ax.set_ylim([-0.5,0.5])
         ax.set_zlim([-0.5,0.5])
+        ax.set_title("GT view (0,0)")
         plt.axis("off")
         ax.view_init(0, 0)
-        #ax.scatter(ptcloud[0,:,0],ptcloud[0,:,1],ptcloud[0,:,2])
-        #draw_pts(ptcloud[0], clr, None, ax, sz=2)
-        ax = fig.add_subplot(132, projection='3d')
+
+        ax = fig.add_subplot(153, projection='3d')
+        ax.scatter(ptcloud[0,:,2], ptcloud[0,:,0], ptcloud[0,:,1], s= 2)
+        ax.set_xlim([-0.5,0.5])
+        ax.set_ylim([-0.5,0.5])
+        ax.set_zlim([-0.5,0.5])
+        ax.set_title("GT view (30,135)")
+        plt.axis("off")
+        ax.view_init(30, 135)
+
+        ax = fig.add_subplot(154, projection='3d')
         ax.scatter(prediction[0,:,2], prediction[0,:,0], prediction[0,:,1], s= 2)
         ax.set_xlim([-0.5,0.5])
         ax.set_ylim([-0.5,0.5])
         ax.set_zlim([-0.5,0.5])
+        ax.set_title("prediction view (0,0)")
         plt.axis("off")
         ax.view_init(0, 0)
-        #ax.scatter(prediction[0,:,0],prediction[0,:,1],prediction[0,:,2])
-        #draw_pts(prediction[0], clr, None, ax, sz=2)
-        ax = fig.add_subplot(133)
-        image = image[0].transpose(0,1)
-        image = image.transpose(1,2)
-        ax.imshow(image)
+
+        ax = fig.add_subplot(155, projection='3d')
+        ax.scatter(prediction[0,:,2], prediction[0,:,0], prediction[0,:,1], s= 2)
+        ax.set_xlim([-0.5,0.5])
+        ax.set_ylim([-0.5,0.5])
+        ax.set_zlim([-0.5,0.5])
+        ax.set_title("prediction view (30,135)")
         plt.axis("off")
-        #index = np.argmax(label)
-        #print(index)
-        #class_list,_ = class_counter(os.path.join('../../../What3D', 'splits', 'classes.txt'))
-        #class_name = class_list[index]
-        #ax.set_title('%s'%class_name,fontsize=12,color='r')
+        ax.view_init(30, 135)
+
         title = os.path.join(path, "%s_%d" % (split_name,idx))
-        #fig.savefig(title, bbox_inches='tight',pad_inches = 0, dpi = 200)
         fig.savefig(title, bbox_inches='tight')
         plt.close()
 

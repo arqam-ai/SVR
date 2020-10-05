@@ -89,7 +89,7 @@ class TrainTester(object):
         self.save_results = args.save_results
         self.log_dir = args.log_dir
         self.vis_dir = os.path.join(args.log_dir,'final_vis')
-        self.tensorboard_dir = os.path.join(self.log_dir,'scalar')
+        self.tensorboard_dir = os.path.join(self.log_dir,'../../sum_runs')
         self.stats_dir = os.path.join(self.log_dir,'stats')
         self.plot_graph = False
 
@@ -99,10 +99,18 @@ class TrainTester(object):
         Path(self.vis_dir).mkdir(parents=True, exist_ok=True)
         Path(self.stats_dir).mkdir(parents=True, exist_ok=True)
 
+        self.if_train = args.train
         self.tensorboard = args.tensorboard
-        if self.tensorboard:
-            tensor_comment = "{}_{}_{}_BS{}_noBN{}_LR{}".format(args.model, args.mode, args.train_batch_size, 
-                                                    args.remove_all_batchNorms, args.lr_G)
+        if self.tensorboard and self.if_train:
+            if args.model == 'atlasnet':
+                tensor_comment = "{}_{}_BS{}_noBN{}_LR{}_NumL{}_{}{}_Width{}_latent{}".format(args.model, args.mode, args.train_batch_size, 
+                                                    args.remove_all_batchNorms, args.lr_G, 
+                                                    args.num_layers, args.template_type, args.nb_primitives, 
+                                                    args.hidden_neurons, args.bottleneck_size)
+            else:
+                tensor_comment = "{}_{}_BS{}_noBN{}_LR{}_NumL{}_Width{}_latent{}".format(args.model, args.mode, args.train_batch_size, 
+                                                    args.remove_all_batchNorms, args.lr_G, args.num_layers, 
+                                                    args.hidden_neurons, args.bottleneck_size) 
             self.writer = SummaryWriter(comment=tensor_comment)
         self.checkpoint_model = args.checkpoint_model
         self.checkpoint_solver = args.checkpoint_solver
@@ -271,18 +279,21 @@ class TrainTester(object):
 
                 loss_ptc_fine = self.criterion_G(ptcloud_pred_fine, ptcloud)
             
-            if epoch == self.total_epochs + 1 and self.save_results:
-                pc_orig, pc2 = \
-                ptcloud.cpu().numpy(), ptcloud_pred_fine.cpu().numpy()
-                
-                code = codeword.cpu().numpy()
-                code = np.squeeze(code)
-                self.finalchamferloss.push(batch_idx, loss = loss_ptc_fine.item())
+            if epoch == self.total_epochs + 1:
+                if self.save_results:
+                    pc_orig, pc2 = \
+                    ptcloud.cpu().numpy(), ptcloud_pred_fine.cpu().numpy()
+                    
+                    code = codeword.cpu().numpy()
+                    code = np.squeeze(code)
+                    self.finalchamferloss.push(batch_idx, loss = loss_ptc_fine.item())
+                    img = image.cpu()
                 #np.save('%s/oriptcloud_%04d.npy' % (self.vis_dir, batch_idx),pc_orig)
-                #np.save('%s/fineptcloud_%04d.npy'%(self.vis_dir, batch_idx),pc2)
                 #np.save('%s/codeword_%04d.npy'%(self.vis_dir, batch_idx),code)
-                img = image.cpu()
-                what3d_dataset_views.data_visualizer(pc_orig, pc2, img, type, self.vis_dir, batch_idx)
+                
+                    what3d_dataset_views.data_visualizer(pc_orig, pc2, img, type, self.vis_dir, batch_idx)
+                #    np.save('%s/fineptcloud_%04d.npy'%(self.vis_dir, batch_idx),pc2)
+                
 
             batch_idx += 1
             chamfer_loss += loss_ptc_fine.item()     
@@ -292,7 +303,7 @@ class TrainTester(object):
         test_loss = test_loss / float(counter)
         chamfer_loss = chamfer_loss / float(counter)
 
-        if type == 'test':
+        if type == 'test' and self.if_train:
             self.stats_finecd_itertest.push(self.train_iter, loss=chamfer_loss)
             self.stats_finecd_epochtest.push(epoch, loss = chamfer_loss)
             self.writer.add_scalar('Loss/test', chamfer_loss, epoch)
