@@ -7,7 +7,6 @@ from mpl_toolkits.mplot3d import axes3d, proj3d
 import torch
 from torch.nn import init
 import trimesh
-from graphviz import Digraph
 
 def make_dot(var, params=None):
 	""" Produces Graphviz representation of PyTorch autograd graph

@@ -25,6 +25,7 @@ import logging
 from dataset.dataset import what3d_dataset_views
 from utils.utils import Normalization
 import time
+import random
 
 
 #from encoders import Encoder
@@ -326,9 +327,30 @@ def simple_infer(args, train_index_path, img_save_path):
             idx = test_idx)
     print(loss_sum/pred_indexes.shape[0])
 
+
+def class_index_dic(pred_trainindex_path):
+    train_index = np.load(pred_trainindex_path)
+    train_idx = 0       # front index of a train class
+    test_idx = 0        # front index of a test class
+    train_slicer = 0    # end index of a train class
+    test_slicer = 0     # end index of a test class
+    _, _, test_class_dic, _, _ = class_counter(args, 'test')
+    _, _, train_class_dic, _, _ = class_counter(args, 'train')
+    class_index_dic = {"train":{}, "test":{}}
+    for idx, key in enumerate(train_class_dic):
+        train_slicer += train_class_dic[key]
+        test_slicer += test_class_dic[key]
+        class_index_dic["train"][key] = [train_idx, train_slicer, train_class_dic[key]]
+        class_index_dic["test"][key] = [test_idx, test_slicer, test_class_dic[key]]
+        train_idx += train_class_dic[key]
+        test_idx += test_class_dic[key]
+    np.save("/home/zyf/What3D/class_index_dic.npy", class_index_dic)
+
+
+
 class Oracle_NN():
 
-    def __init__(self, device, logger, save_path):
+    def __init__(self, device, logger, save_path, total_num):
         super(Oracle_NN,self).__init__()
         self.criterion = ChamferDistance()				  #
         self.criterion = self.criterion.to(device)
@@ -340,6 +362,7 @@ class Oracle_NN():
         self.logger = logger
         self.start_time = time.time() 
         self.save_path = save_path
+        self.total_num = total_num
 
 
     def invoke_epoch_callback(self):
@@ -356,7 +379,7 @@ class Oracle_NN():
 
     def NN(self, train_set, test_ptcloud, train_idx, test_idx):
         if self.test_index % 200 == 0:
-            self.logger.info("Trained instances %d, Time passed %.6f min" % (self.test_index, (time.time()-self.start_time)/60))
+            self.logger.info("Trained instances %d/%d, Time passed %.6f min" % (self.test_index, self.total_num, (time.time()-self.start_time)/60))
         
         B, ptnum,_ = train_set.shape
         min_idx = 0
@@ -372,7 +395,6 @@ class Oracle_NN():
         min_idx = train_idx + min_idx
         self.test_minloss.push(self.test_index, loss = min_loss.item())
         self.test_mintrainidx.push(self.test_index, loss = min_idx)
-
         self.logger.info('test index:%d, loss:%.6f, predicted idx in trainset:%d' % (self.test_index, min_loss, min_idx))
         self.test_index += 1
         return min_idx, min_loss
@@ -388,6 +410,85 @@ class Oracle_NN():
             class_trainindex[index], loss_all[index] = self.NN(train_gt, test_gt[index].unsqueeze(0), train_idx, test_idx) 
             self.invoke_epoch_callback()
         return torch.sum(loss_all), class_trainindex
+    
+    def NN_multicore(self, train_set, test_ptcloud):
+        pass
+
+    def forward_multicore(self, train_gt, test_gt):
+        B, ptnum, dim = test_gt.shape
+        # construct a empty predicted ptcloud 
+        class_trainindex = torch.zeros([B, 1], dtype=torch.int32).to(self.device)
+        # container to collect loss
+        loss_all = torch.zeros([B], dtype=torch.float64)
+        # enumerate through test set
+        self.NN(train_gt, test_gt.unsqueeze(0)) 
+        self.invoke_epoch_callback()
+        return torch.sum(loss_all), class_trainindex
+
+
+    @staticmethod
+    def test_OracleNN(args, pred_trainindex_path, class_index_dic_path):
+        pred_trainidx = np.load(pred_trainindex_path)
+        class_index_dic = np.load(class_index_dic_path, allow_pickle=True).item()
+        test_nums = sum([item[2] for item in class_index_dic["test"].values()])
+        ptcloud = np.load(args.ptcloud_path)
+        train_set = ptcloud['train']         
+        test_set = ptcloud['test']
+        train_set = torch.from_numpy(train_set)
+        test_set = torch.from_numpy(test_set)
+        train_set = Normalization(train_set, inplace=True, keep_track=False).normalize_unitL2ball()
+        test_set = Normalization(test_set, inplace=True, keep_track=False).normalize_unitL2ball()
+
+        class_list, _, _, _,_ = class_counter(args, "test")
+        image_path_list = list()
+        img_view_list = list()
+
+        ## Load the total instance path
+        for clname in class_list:
+            f = open(os.path.join(args.data_basedir, args.splits_path, 'lists', clname, '%s.txt'%"test"),"r")
+            for x in f:
+                instance_id = x[:-1]
+                image_path_list.append(os.path.join(args.data_basedir, args.img_path, clname, instance_id))
+
+        for view_idx, view in enumerate(args.views):
+            for i in range(len(image_path_list)):
+                img_view_list.append(os.path.join(image_path_list[i], '%s.png'%view))
+
+        test_num = 100
+
+        for test_order in range(test_num):
+            test_random_index = random.randint(0, test_nums-1)
+            for key in class_index_dic['test']:
+                if class_index_dic['test'][key][0] <= test_random_index and class_index_dic['test'][key][1] > test_random_index:
+                    train_index = class_index_dic["train"][key][0]
+                    train_slicer = class_index_dic["train"][key][1]
+                    class_to_test = key
+            
+            test_ptcloud = test_set[test_random_index].to(args.device)
+            image = cv2.imread(img_view_list[test_random_index]).transpose((2, 0, 1))
+            image = np.expand_dims(image, axis=0)    
+            class_train_set = train_set[train_index:train_slicer].to(args.device)
+            criterion = ChamferDistance().to(args.device)
+            B, ptnum, _ = class_train_set.shape
+            min_idx = 0
+            min_loss = torch.tensor([1000.0], dtype=torch.float64).to(args.device)
+            # enumerate through train set， compare and find the minimum loss 
+            for idx in range(B):
+                loss = criterion(class_train_set[idx].unsqueeze(0), test_ptcloud.unsqueeze(0)) 
+                if loss < min_loss:
+                    min_idx = idx
+                    min_loss = loss
+            ## add offset to index 
+            new_min_idx = train_index + min_idx
+            origin_min_idx = pred_trainidx[test_random_index][0]
+            what3d_dataset_views.data_visualizer(test_ptcloud.unsqueeze(0).cpu().numpy(), train_set[origin_min_idx].unsqueeze(0).cpu().numpy(), image, 'oracle_test', 
+                        "/home/zyf/SVR/experiment/Oracle_NN/Oracle_object/oracle_test", test_order)
+            if new_min_idx == origin_min_idx:
+                print("Test {} PASS, Class: {}, test index: {}, pred train idx: {}".format(test_order, class_to_test, test_random_index, new_min_idx))
+            else:
+                print("Test {} FAIL, Class: {}, test index: {}, new pred train idx: {}, origin pred train idx: {}".format(test_order, class_to_test, test_random_index, new_min_idx,
+                      pred_trainidx[test_random_index][0]))
+        
 
 def search(args):
     
@@ -420,7 +521,7 @@ def search(args):
     train_set = Normalization(train_set, inplace=True, keep_track=False).normalize_unitL2ball()
     test_set = Normalization(test_set, inplace=True, keep_track=False).normalize_unitL2ball()
     
-    model = Oracle_NN(args.device, logger, args.save_path, )
+    model = Oracle_NN(args.device, logger, args.save_path)
 
     train_idx = 0 # front index of a train class
     test_idx = 0 # front index of a test class
@@ -438,7 +539,7 @@ def search(args):
                   test_set[test_idx:test_slicer], train_idx, test_idx)
         if idx == 0:
             predict_trainindex = class_trainindex
-        else:
+        else: 
             predict_trainindex = torch.cat((predict_trainindex, class_trainindex),0)
         train_idx += train_class_dic[key]
         test_idx += test_class_dic[key]
@@ -469,14 +570,17 @@ if __name__ == '__main__':
     parser.add_argument("--class-path", dest="class_path", type=str,default='classes.txt',help="class name list")
     parser.add_argument("--views",dest="views", type=str,default= '0',
                     help="five view for each instance")
-    parser.add_argument("--save-path",dest="save_path", type=str,default= 'exp3',
+    parser.add_argument("--save-path",dest="save_path", type=str,default= 'exp2',
                     help="")                
     args = parser.parse_args(sys.argv[1:])
     args.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     args.script_folder = os.path.dirname(os.path.abspath(__file__))
 
     print(str(args))
+
+    Oracle_NN.test_OracleNN(args, "/home/zyf/SVR/experiment/Oracle_NN/Oracle_object/{}/predict_trainindex.npy".format(args.save_path),
+                 "/home/zyf/What3D/class_index_dic.npy")
     #search(args)
     #infer(args, "/home/zyf/SVR/experiment/Oracle_NN/Oracle_object/exp1/predict_trainindex.npy", img_save_path="/home/zyf/SVR/experiment/Oracle_NN/Oracle_object/exp1/final_vis")
-    simple_infer(args, "/home/zyf/SVR/experiment/Oracle_NN/Oracle_object/{}/predict_trainindex.npy".format(args.save_path), 
-    img_save_path="/home/zyf/SVR/experiment/Oracle_NN/Oracle_object/{}/total_final_vis".format(args.save_path))
+    #simple_infer(args, "/home/zyf/SVR/experiment/Oracle_NN/Oracle_object/{}/predict_trainindex.npy".format(args.save_path), 
+    #img_save_path="/home/zyf/SVR/experiment/Oracle_NN/Oracle_object/{}/total_final_vis".format(args.save_path))
