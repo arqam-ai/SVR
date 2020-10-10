@@ -2,18 +2,53 @@
 Author: Yiru Shen
 Purpose: convert point cloud to voxel, compute mIoU between voxels
 """
-
+import sys
 import numpy as np
 import pandas as pd
 import pickle
 from pyntcloud import PyntCloud
 from collections import defaultdict
 import matplotlib.pyplot as plt
+sys.path.append("../")
+from utils.utils import Normalization
+import argparse
+import utils.binvox_rw as binvox_rw
+import tqdm
+import torch
 
-import binvox_rw
 
 import sys, os, glob
 import scipy.ndimage as nd
+
+def class_counter(args, split_name):
+    f_class = open(os.path.join(args.data_basedir, args.splits_path, args.class_path),"r")
+    
+    class_num = 0
+    class_dic = {}           # class_name : num of instance in this class
+    class_index = {}         # class_name : class_index     e.g. airplane:0
+    class_list = []          # 55 class
+    data_class = []          # airairairchairchair
+    color = []
+    for line in f_class:
+        index = line.find(' ')
+        clname = line[:index]
+        class_dic[clname] = 0
+        class_list += [clname]
+        class_index[clname] = class_num
+        class_num += 1
+        
+    instance_num = 0
+    for clname in tqdm.tqdm(class_list,total= len(class_list), desc = '%s'%split_name):
+        f = open(os.path.join(args.data_basedir, args.splits_path, 'lists', clname, '%s.txt'%split_name),"r")
+        for x in f:
+            class_dic[clname] += 1
+            instance_num += 1
+            data_class += [clname]
+            color += [class_index[clname]]
+    
+    #print(instance_num,class_dic, data_class) 
+    return class_list, instance_num, class_dic, data_class, color
+
 
 def convert_array_to_dataframe(data):
     columns = ['x', 'y', 'z']
@@ -33,9 +68,12 @@ def convert_ptc_to_voxel(ptc, n_x=128, n_y=128, n_z=128):
     for x, y, z in zip(x_cords, y_cords, z_cords):
         voxel[x][y][z] = True
 
-    # plot_voxel(voxel)
-
-    return 1.0*voxel
+    x_cords = np.expand_dims(x_cords, axis=0)
+    y_cords = np.expand_dims(y_cords, axis=0)
+    z_cords = np.expand_dims(z_cords, axis=0)
+    cords = np.concatenate((x_cords, y_cords, z_cords), axis=0)
+    
+    return cords, voxel
 
 def resize(voxel, shape):
     """
@@ -66,11 +104,33 @@ def plot_voxel(voxel, title=None, save_file = None):
     fig = plt.figure()
     ax = fig.gca(projection='3d')
     ax.voxels(voxel, edgecolor='k')
-    # plt.title(title)
+    plt.title(title)
     if save_file is None:
         plt.show()
     else:
         plt.savefig(save_file)
+
+def plot_cords(cords, title=None, save_file=None):
+    fig = plt.figure(figsize=(10,4))
+    ax = fig.add_subplot(121, projection='3d')
+    ax.scatter(cords[0,:], cords[1,:], cords[2,:], s = 2)
+    ax.set_xlim([0,128])
+    ax.set_ylim([0,128])
+    ax.set_zlim([0,128])
+    ax.view_init(30, 135)
+    ax = fig.add_subplot(122, projection='3d')
+    ax.scatter(cords[0,:], cords[1,:], cords[2,:], s = 2)
+    ax.set_xlim([0,128])
+    ax.set_ylim([0,128])
+    ax.set_zlim([0,128])
+    ax.view_init(30, 90)
+    plt.title(title)
+    if save_file is None:
+        plt.show()
+        plt.close()
+    else:
+        plt.savefig(save_file)
+        plt.close()
 
 def parse_test_gt_filelist(path="/home/yirus/Projects/ECCV2020_rebuttal/model/test_data_filename.pkl"):
     with open(path, "rb") as f:
@@ -137,5 +197,61 @@ def main():
     with open("clustering_miou.pkl", "wb") as f:
         pickle.dump(instance_iou, f)
 
+
+def convert(args):
+
+    pred_indexes = np.load("/home/zyf/SVR/experiment/Oracle_NN/Oracle_object/exp2/predict_trainindex.npy")
+    index = pred_indexes[2200][0]
+    ptcloud_pth = "/home/zyf/What3D/ptcloud_object.npz"
+    ptcloud = np.load(ptcloud_pth)['train'][index]
+    ptcloud_cords, voxel = convert_ptc_to_voxel(convert_array_to_dataframe(ptcloud))
+    plot_cords(ptcloud_cords, title="ptcloud_cords_{}".format(index), save_file="../img/voxel/ptcloud_cords_{}.png".format(index))
+    normed_ptcloud = Normalization(torch.from_numpy(ptcloud), inplace=True, keep_track=False).normalize_unitL2ball()
+    normed_ptcloud_cords, voxel = convert_ptc_to_voxel(convert_array_to_dataframe(normed_ptcloud.numpy()[0]))
+    plot_cords(normed_ptcloud_cords, title="normed_ptcloud_cords_{}".format(index), save_file="../img/voxel/normed_ptcloud_cords_{}.png".format(index))
+
+    #print(ptcloud_cords.shape)
+    #np.save("../img/voxel/test_cords_{}.npy".format(index), cords)
+
+    class_list, _, _, _,_ = class_counter(args, "test")
+    voxel_path_dic = {"train":[], 'test':[]}
+    for split in ['train', 'test']:
+        for clname in class_list:
+            f = open(os.path.join(args.data_basedir, args.splits_path, 'lists', clname, '%s.txt'%split),"r")
+            for x in f:
+                instance_id = x[:-1]
+                voxel_path_dic[split].append(os.path.join(args.data_basedir, args.voxel_path, clname, instance_id, "voxel_object.binvox"))
+    
+    with open(voxel_path_dic['train'][index], 'rb') as f:
+        voxel_cords = binvox_rw.read_as_coord_array(f).data
+    plot_cords(voxel_cords, title="voxel_cords_{}".format(index), save_file="../img/voxel/voxel_cords_{}.png".format(index))
+    print(voxel_cords.shape)
+    voxel_cords = voxel_cords.transpose(1,0)
+    normed_voxel_cords, voxel = convert_ptc_to_voxel(convert_array_to_dataframe(voxel_cords))
+    print(normed_voxel_cords.shape)
+    plot_cords(normed_voxel_cords, title="normed_voxel_cords_{}".format(index), save_file="../img/voxel/normed_voxel_cords_{}.png".format(index))
+
+def vis(ptcloud_pth):
+    ptcloud = np.load(ptcloud_pth)
+    plot_cords(ptcloud)
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(sys.argv[0])
+    parser.add_argument('--data-basedir',type=str,default='/home/zyf/What3D',
+                    help='path of the jsonfile')
+    parser.add_argument('--img-path',type=str,default='renderings',
+                    help='path of the jsonfile')
+    parser.add_argument('--voxel-path', type=str, default='voxels_object',
+                    help='path of the voxel data')
+    parser.add_argument("--splits-path",dest="splits_path", type=str, default='splits',
+                      help='path of the data folder') 
+    parser.add_argument("--ptcloud-path",type=str,default="../../What3D/ptcloud_object.npz",help=' ' )
+    parser.add_argument("--class-path", dest="class_path", type=str,default='classes.txt',help="class name list")
+    parser.add_argument("--views",dest="views", type=str,default= '0',
+                    help="five view for each instance")
+    parser.add_argument("--save-path",dest="save_path", type=str,default= 'exp2',
+                    help="")                
+    args = parser.parse_args(sys.argv[1:])
+    #args.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    args.script_folder = os.path.dirname(os.path.abspath(__file__))
+    convert(args)
+    #vis("../img/voxel/test_cords_13000.npy")

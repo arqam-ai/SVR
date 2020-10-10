@@ -11,205 +11,215 @@ import csv
 #from model.im2mesh.eval import distance_p2p
 class ChamferDistance(nn.Module):
 
-	def forward(self, input1, input2, mode='nonsquared'):
-		# input1, input2: BxNxK, BxMxK, K = 3
-		B, N, K = input1.shape
-		_, M, _ = input2.shape
+    def forward(self, input1, input2, mode='nonsquared'):
+        # input1, input2: BxNxK, BxMxK, K = 3
+        B, N, K = input1.shape
+        _, M, _ = input2.shape
 
-		# Repeat (x,y,z) M times in a row
-		input11 = input1.unsqueeze(2)           # BxNx1xK
-		input11 = input11.expand(B, N, M, K)    # BxNxMxK
-		# Repeat (x,y,z) N times in a column
-		input22 = input2.unsqueeze(1)           # Bx1xMxK
-		input22 = input22.expand(B, N, M, K)    # BxNxMxK
-		# compute the distance matrix
-		D = input11 - input22                   # BxNxMxK
-		D = torch.norm(D, p=2, dim=3)           # BxNxM
-		if mode == 'squared':
-			D = torch.norm(D, p=2, dim=3)**2    # for L2 
-			
-		dist0, _ = torch.min( D, dim=1 )        # BxM
-		dist1, _ = torch.min( D, dim=2 )        # BxN
+        # Repeat (x,y,z) M times in a row
+        input11 = input1.unsqueeze(2)           # BxNx1xK
+        input11 = input11.expand(B, N, M, K)    # BxNxMxK
+        # Repeat (x,y,z) N times in a column
+        input22 = input2.unsqueeze(1)           # Bx1xMxK
+        input22 = input22.expand(B, N, M, K)    # BxNxMxK
+        # compute the distance matrix
+        D = input11 - input22                   # BxNxMxK
+        D = torch.norm(D, p=2, dim=3)           # BxNxM
+        if mode == 'squared':
+            D = torch.norm(D, p=2, dim=3)**2    # for L2 
+            
+        dist0, _ = torch.min( D, dim=1 )        # BxM
+        dist1, _ = torch.min( D, dim=2 )        # BxN
 
-		loss = torch.mean(dist0, 1) + torch.mean(dist1, 1)  # B
-		loss = torch.mean(loss)                             # 1
-		return loss
+        loss = torch.mean(dist0, 1) + torch.mean(dist1, 1)  # B
+        loss = torch.mean(loss)                             # 1
+        return loss
 
-		# pytorch3d 
-		#loss_ptc_fine_pytorch3d, _ = chamfer_distance(ptcloud_pred_fine, ptcloud)
-		# atlasnet python
-		#dist1, dist2,_,_ = distChamfer(ptcloud_pred_fine, ptcloud)
-		#loss_ptc_fine_atlaspython = dist1.mean() + dist2.mean()
-		
+        # pytorch3d 
+        #loss_ptc_fine_pytorch3d, _ = chamfer_distance(ptcloud_pred_fine, ptcloud)
+        # atlasnet python
+        #dist1, dist2,_,_ = distChamfer(ptcloud_pred_fine, ptcloud)
+        #loss_ptc_fine_atlaspython = dist1.mean() + dist2.mean()
+        
 # atlasnet c cuda
 class ChamferDistanceL2(nn.Module):
-	def __init__(self):
-		super(ChamferDistanceL2, self).__init__()
-		self.chamLoss = dist_chamfer_3D.chamfer_3DDist()
+    def __init__(self):
+        super(ChamferDistanceL2, self).__init__()
+        self.chamLoss = dist_chamfer_3D.chamfer_3DDist()
 
-	def forward(self, prediction, gt):
-		dist1, dist2, idx1, idx2 = self.chamLoss(prediction, gt)
-		loss_ptc_fine_atlas = torch.mean(dist1) + torch.mean(dist2)
-		return loss_ptc_fine_atlas
+    def forward(self, prediction, gt):
+        dist1, dist2, idx1, idx2 = self.chamLoss(prediction, gt)
+        loss_ptc_fine_atlas = torch.mean(dist1) + torch.mean(dist2)
+        return loss_ptc_fine_atlas
 
-	
+
+
+def evaluate_voxel_prediction(prediction, gt):
+    """  The prediction and gt are 3 dim voxels. Each voxel has values 1 or 0
+         reference: https://shapenet.cs.stanford.edu/iccv17/  
+    """
+    intersection = np.sum(np.logical_and(prediction,gt))
+    union = np.sum(np.logical_or(prediction,gt))
+    IoU = intersection / union
+    return IoU
+
+
 def emd(pred, gt):
-	""" earth mover distance
-	pred  : torch.tensor (N, ptnum, 3)
-		predicted pointcloud 
-	gt    : torch.tensor (N, ptnum, 3)
-		ground truth pointcloud
-	"""
-	ptnum = pred.shape[1]
-	emd = earth_mover_distance(gt, pred, transpose=False)
-	emd /= ptnum
-
-	return emd
+    """ earth mover distance
+    pred  : torch.tensor (N, ptnum, 3)
+        predicted pointcloud 
+    gt    : torch.tensor (N, ptnum, 3)
+        ground truth pointcloud
+    """
+    ptnum = pred.shape[1]
+    emd = earth_mover_distance(gt, pred, transpose=False)
+    emd /= ptnum
+    return emd
 
    
 class MaskedL1(nn.Module):
-	def __init__(self):
-		super(MaskedL1, self).__init__()
-		self.criterion = nn.L1Loss(reduction="sum")
+    def __init__(self):
+        super(MaskedL1, self).__init__()
+        self.criterion = nn.L1Loss(reduction="sum")
 
-	def forward(self, gt, pred, mask):
-		loss = self.criterion(gt*mask, pred*mask)
-		loss /= (mask==1.0).sum()
-		return loss
+    def forward(self, gt, pred, mask):
+        loss = self.criterion(gt*mask, pred*mask)
+        loss /= (mask==1.0).sum()
+        return loss
 
     
 class ProjChamfer(nn.Module):
-	def __init__(self,img_center):
-		super(ProjChamfer, self).__init__()
-		self.chamfer = ChamfersDistance3()
-		self.device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")   
-		self.centersize =  img_center
+    def __init__(self,img_center):
+        super(ProjChamfer, self).__init__()
+        self.chamfer = ChamfersDistance3()
+        self.device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")   
+        self.centersize =  img_center
  
         
-	def projection(self, input, proMatrix):
-		B = input.shape[0]
-		ptnum = input.shape[1]
-		infill = torch.ones(B, ptnum, 1).to(self.device)          #BxNx1
-		input_4by1 = torch.transpose(torch.cat((input,infill),2),1,2)               #BxNx4 -> Bx4xN 
-		posed_ptcloud = torch.bmm(proMatrix, input_4by1)                            #Bx4xNi
-		x_z = torch.div(posed_ptcloud[:,0,:],posed_ptcloud[:,2,:]).unsqueeze(2)
-		y_z = torch.div(posed_ptcloud[:,1,:],posed_ptcloud[:,2,:]).unsqueeze(2)
-		#constant_z =  torch.cuda.FloatTensor(torch.ones(B, ptnum, 1).to(self.device))   
-		#squeezed_ptcloud = torch.cat((x_z, y_z, constant_z),2)
-		squeezed_ptcloud = torch.cat((x_z, y_z),2)
-		return squeezed_ptcloud  
+    def projection(self, input, proMatrix):
+        B = input.shape[0]
+        ptnum = input.shape[1]
+        infill = torch.ones(B, ptnum, 1).to(self.device)          #BxNx1
+        input_4by1 = torch.transpose(torch.cat((input,infill),2),1,2)               #BxNx4 -> Bx4xN 
+        posed_ptcloud = torch.bmm(proMatrix, input_4by1)                            #Bx4xNi
+        x_z = torch.div(posed_ptcloud[:,0,:],posed_ptcloud[:,2,:]).unsqueeze(2)
+        y_z = torch.div(posed_ptcloud[:,1,:],posed_ptcloud[:,2,:]).unsqueeze(2)
+        #constant_z =  torch.cuda.FloatTensor(torch.ones(B, ptnum, 1).to(self.device))   
+        #squeezed_ptcloud = torch.cat((x_z, y_z, constant_z),2)
+        squeezed_ptcloud = torch.cat((x_z, y_z),2)
+        return squeezed_ptcloud  
     
-		#squeezed_ptcloud = posed_ptcloud.clone()       
-		#squeezed_ptcloud[:,0,:] = torch.div(posed_ptcloud[:,0,:],posed_ptcloud[:,2,:])    
-		#squeezed_ptcloud[:,1,:] = torch.div(posed_ptcloud[:,1,:],posed_ptcloud[:,2,:])
-		#squeezed_ptcloud[:,2,:] = torch.ones(B, ptnum)
+        #squeezed_ptcloud = posed_ptcloud.clone()       
+        #squeezed_ptcloud[:,0,:] = torch.div(posed_ptcloud[:,0,:],posed_ptcloud[:,2,:])    
+        #squeezed_ptcloud[:,1,:] = torch.div(posed_ptcloud[:,1,:],posed_ptcloud[:,2,:])
+        #squeezed_ptcloud[:,2,:] = torch.ones(B, ptnum)
 
     
     
-	def normalize(self, input):
-		B = input.shape[0]
-		ptnum = input.shape[1]        
-		center_xy = self.centersize * torch.ones(B, ptnum, 2).to(self.device)    
-		#center_z =torch.zeros(B, ptnum, 1)
-		#center = torch.cat((center_xy,center_z),2).to(self.device)
-		center = center_xy       
-		#print(input.shape)
-		#print(center.shape)       
-		return (input - center)/(2 * self.centersize)
+    def normalize(self, input):
+        B = input.shape[0]
+        ptnum = input.shape[1]        
+        center_xy = self.centersize * torch.ones(B, ptnum, 2).to(self.device)    
+        #center_z =torch.zeros(B, ptnum, 1)
+        #center = torch.cat((center_xy,center_z),2).to(self.device)
+        center = center_xy       
+        #print(input.shape)
+        #print(center.shape)       
+        return (input - center)/(2 * self.centersize)
         
         
-	def forward(self, pred, gt, proMatrix):
-		B = pred.shape[0]        
-		ptnum = pred.shape[1]      
-		gt_ptplane = self.projection(gt, proMatrix)
-		pred_ptplane = self.projection(pred, proMatrix)
-		#gt_ptplane = self.normalize(gt_ptplane)
-		#pred_ptplane = self.normalize(pred_ptplane)
+    def forward(self, pred, gt, proMatrix):
+        B = pred.shape[0]        
+        ptnum = pred.shape[1]      
+        gt_ptplane = self.projection(gt, proMatrix)
+        pred_ptplane = self.projection(pred, proMatrix)
+        #gt_ptplane = self.normalize(gt_ptplane)
+        #pred_ptplane = self.normalize(pred_ptplane)
 
-		loss = self.chamfer(gt_ptplane,pred_ptplane)     
-		return loss
+        loss = self.chamfer(gt_ptplane,pred_ptplane)     
+        return loss
     
     
 class ProjChamfer_test(nn.Module):
-	def __init__(self,img_center):
-		super(ProjChamfer_test, self).__init__()
-		self.chamfer = ChamfersDistance3()
-		self.device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")   
-		self.centersize =  img_center
-		self.x_max = list()
-		self.x_min = list()
-		self.y_max = list()
-		self.y_min = list()
+    def __init__(self,img_center):
+        super(ProjChamfer_test, self).__init__()
+        self.chamfer = ChamfersDistance3()
+        self.device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")   
+        self.centersize =  img_center
+        self.x_max = list()
+        self.x_min = list()
+        self.y_max = list()
+        self.y_min = list()
         
         
-	def projection(self, input, proMatrix):
-		B = input.shape[0]
-		ptnum = input.shape[1]
-		infill = torch.ones(B, ptnum, 1).to(self.device)          #BxNx1
-		input_4by1 = torch.transpose(torch.cat((input,infill),2),1,2)               #BxNx4 -> Bx4xN 
-		posed_ptcloud = torch.bmm(proMatrix, input_4by1)                            #Bx4xNi
-		x_z = torch.div(posed_ptcloud[:,0,:],posed_ptcloud[:,2,:]).unsqueeze(2)
-		y_z = torch.div(posed_ptcloud[:,1,:],posed_ptcloud[:,2,:]).unsqueeze(2)
-		#constant_z =  torch.cuda.FloatTensor(torch.ones(B, ptnum, 1).to(self.device))   
-		#squeezed_ptcloud = torch.cat((x_z, y_z, constant_z),2)
-		squeezed_ptcloud = torch.cat((x_z, y_z),2)
-		return squeezed_ptcloud  
+    def projection(self, input, proMatrix):
+        B = input.shape[0]
+        ptnum = input.shape[1]
+        infill = torch.ones(B, ptnum, 1).to(self.device)          #BxNx1
+        input_4by1 = torch.transpose(torch.cat((input,infill),2),1,2)               #BxNx4 -> Bx4xN 
+        posed_ptcloud = torch.bmm(proMatrix, input_4by1)                            #Bx4xNi
+        x_z = torch.div(posed_ptcloud[:,0,:],posed_ptcloud[:,2,:]).unsqueeze(2)
+        y_z = torch.div(posed_ptcloud[:,1,:],posed_ptcloud[:,2,:]).unsqueeze(2)
+        #constant_z =  torch.cuda.FloatTensor(torch.ones(B, ptnum, 1).to(self.device))   
+        #squeezed_ptcloud = torch.cat((x_z, y_z, constant_z),2)
+        squeezed_ptcloud = torch.cat((x_z, y_z),2)
+        return squeezed_ptcloud  
     
-		#squeezed_ptcloud = posed_ptcloud.clone()       
-		#squeezed_ptcloud[:,0,:] = torch.div(posed_ptcloud[:,0,:],posed_ptcloud[:,2,:])    
-		#squeezed_ptcloud[:,1,:] = torch.div(posed_ptcloud[:,1,:],posed_ptcloud[:,2,:])
-		#squeezed_ptcloud[:,2,:] = torch.ones(B, ptnum)
+        #squeezed_ptcloud = posed_ptcloud.clone()       
+        #squeezed_ptcloud[:,0,:] = torch.div(posed_ptcloud[:,0,:],posed_ptcloud[:,2,:])    
+        #squeezed_ptcloud[:,1,:] = torch.div(posed_ptcloud[:,1,:],posed_ptcloud[:,2,:])
+        #squeezed_ptcloud[:,2,:] = torch.ones(B, ptnum)
 
     
     
-	def normalize(self, input):
-		B = input.shape[0]
-		ptnum = input.shape[1]        
-		center_xy = self.centersize * torch.ones(B, ptnum, 2).to(self.device)    
-		#center_z =torch.zeros(B, ptnum, 1)
-		#center = torch.cat((center_xy,center_z),2).to(self.device)
-		center = center_xy       
-		#print(input.shape)
-		#print(center.shape)       
-		return (input - center)/(2 * self.centersize)
+    def normalize(self, input):
+        B = input.shape[0]
+        ptnum = input.shape[1]        
+        center_xy = self.centersize * torch.ones(B, ptnum, 2).to(self.device)    
+        #center_z =torch.zeros(B, ptnum, 1)
+        #center = torch.cat((center_xy,center_z),2).to(self.device)
+        center = center_xy       
+        #print(input.shape)
+        #print(center.shape)       
+        return (input - center)/(2 * self.centersize)
         
-	def text_save(self, filename, data):#
-		file = open(filename,'a')
-		for i in range(len(data)):            
-			if i == 3:            
-				s = str(data[i]) + '\n'
-			else:
-				s = str(data[i]) + '\t'    #    
-			file.write(s)
-		file.close()
-		
+    def text_save(self, filename, data):#
+        file = open(filename,'a')
+        for i in range(len(data)):            
+            if i == 3:            
+                s = str(data[i]) + '\n'
+            else:
+                s = str(data[i]) + '\t'    #    
+            file.write(s)
+        file.close()
+        
     
     
-	def forward(self, pred, gt, proMatrix):
-		B = pred.shape[0]        
-		ptnum = pred.shape[1]      
-		gt_ptplane = self.projection(gt, proMatrix)
-		tmp1 = torch.max(gt_ptplane[:,:,0])
-		tmp2 = torch.min(gt_ptplane[:,:,0])
-		tmp3 = torch.max(gt_ptplane[:,:,1])
-		tmp4 = torch.min(gt_ptplane[:,:,1])     
-		x_max = int(tmp1.item())
-		x_min = int(tmp2.item())
-		y_max = int(tmp3.item())
-		y_min = int(tmp4.item()) 
-		self.x_max.append(x_max)
-		self.x_min.append(x_min)
-		self.y_max.append(y_max)
-		self.y_min.append(y_min)
-		data = [x_min, x_max,y_min,y_max]
-		print(min(self.x_min)," ",max(self.x_max)," ",min(self.y_min)," ",max(self.y_max))         
-		self.text_save('datarange.txt',data)        
-		pred_ptplane = self.projection(pred, proMatrix)
-		gt_ptplane = self.normalize(gt_ptplane)
-		pred_ptplane = self.normalize(pred_ptplane)
+    def forward(self, pred, gt, proMatrix):
+        B = pred.shape[0]        
+        ptnum = pred.shape[1]      
+        gt_ptplane = self.projection(gt, proMatrix)
+        tmp1 = torch.max(gt_ptplane[:,:,0])
+        tmp2 = torch.min(gt_ptplane[:,:,0])
+        tmp3 = torch.max(gt_ptplane[:,:,1])
+        tmp4 = torch.min(gt_ptplane[:,:,1])     
+        x_max = int(tmp1.item())
+        x_min = int(tmp2.item())
+        y_max = int(tmp3.item())
+        y_min = int(tmp4.item()) 
+        self.x_max.append(x_max)
+        self.x_min.append(x_min)
+        self.y_max.append(y_max)
+        self.y_min.append(y_min)
+        data = [x_min, x_max,y_min,y_max]
+        print(min(self.x_min)," ",max(self.x_max)," ",min(self.y_min)," ",max(self.y_max))         
+        self.text_save('datarange.txt',data)        
+        pred_ptplane = self.projection(pred, proMatrix)
+        gt_ptplane = self.normalize(gt_ptplane)
+        pred_ptplane = self.normalize(pred_ptplane)
 
-		loss = self.chamfer(gt_ptplane,pred_ptplane)     
-		return loss
+        loss = self.chamfer(gt_ptplane,pred_ptplane)     
+        return loss
     
 
 # def laplace_coord(input, lap_idx, block_id, use_cuda = True):

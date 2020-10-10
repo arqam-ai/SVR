@@ -130,7 +130,7 @@ def main(args, logger):
 
     if args.test:
         runner.netG.load_state_dict(torch.load(os.path.join(args.log_dir,"model_train_best.pth")))
-        runner.optimizer_G.load_state_dict(torch.load(os.path.join(args.log_dir,"solver_train_best.pth")))
+        #runner.optimizer_G.load_state_dict(torch.load(os.path.join(args.log_dir,"solver_train_best.pth")))
 
         runner.test(
             epoch=args.total_epochs + 1,

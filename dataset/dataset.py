@@ -130,9 +130,9 @@ class what3d_dataset_views(Dataset):
         return res_index
 
     @staticmethod
-    def data_visualizer(ptcloud, prediction, image, split_name, path, idx):
+    def data_visualizer(ptcloud, prediction, image, split_name, path, idx, loss=0.0, type='pt'):
 
-        fig = plt.figure(figsize=(15, 4))
+        fig = plt.figure(figsize=(20, 4))
 
         ax = fig.add_subplot(151)
         if isinstance(image, np.ndarray):
@@ -143,43 +143,108 @@ class what3d_dataset_views(Dataset):
 
         ax.imshow(image)
         plt.axis("off")
+        
+        if type=='pt':
+            if len(ptcloud.shape) == 2:
+                ptcloud = ptcloud.unsqueeze(0)
+            if len(prediction.shape) == 2:
+                prediction = prediction.unsqueeze(0)
+            ax = fig.add_subplot(152, projection='3d')
+            ax.scatter(ptcloud[0,:,2], ptcloud[0,:,0], ptcloud[0,:,1], s= 2)
+            ax.set_xlim([-0.5,0.5])
+            ax.set_ylim([-0.5,0.5])
+            ax.set_zlim([-0.5,0.5])
+            ax.set_title("GT view (0,0)")
+            plt.axis("off")
+            ax.view_init(0, 0)
 
-        ax = fig.add_subplot(152, projection='3d')
-        ax.scatter(ptcloud[0,:,2], ptcloud[0,:,0], ptcloud[0,:,1], s= 2)
-        ax.set_xlim([-0.5,0.5])
-        ax.set_ylim([-0.5,0.5])
-        ax.set_zlim([-0.5,0.5])
-        ax.set_title("GT view (0,0)")
-        plt.axis("off")
-        ax.view_init(0, 0)
+            ax = fig.add_subplot(153, projection='3d')
+            ax.scatter(ptcloud[0,:,2], ptcloud[0,:,0], ptcloud[0,:,1], s= 2)
+            ax.set_xlim([-0.5,0.5])
+            ax.set_ylim([-0.5,0.5])
+            ax.set_zlim([-0.5,0.5])
+            ax.set_title("GT view (30,135)")
+            plt.axis("off")
+            ax.view_init(30, 135)
 
-        ax = fig.add_subplot(153, projection='3d')
-        ax.scatter(ptcloud[0,:,2], ptcloud[0,:,0], ptcloud[0,:,1], s= 2)
-        ax.set_xlim([-0.5,0.5])
-        ax.set_ylim([-0.5,0.5])
-        ax.set_zlim([-0.5,0.5])
-        ax.set_title("GT view (30,135)")
-        plt.axis("off")
-        ax.view_init(30, 135)
+            ax = fig.add_subplot(154, projection='3d')
+            ax.scatter(prediction[0,:,2], prediction[0,:,0], prediction[0,:,1], s= 2)
+            ax.set_xlim([-0.5,0.5])
+            ax.set_ylim([-0.5,0.5])
+            ax.set_zlim([-0.5,0.5])
+            ax.set_title("prediction view (0,0)")
+            plt.axis("off")
+            ax.view_init(0, 0)
 
-        ax = fig.add_subplot(154, projection='3d')
-        ax.scatter(prediction[0,:,2], prediction[0,:,0], prediction[0,:,1], s= 2)
-        ax.set_xlim([-0.5,0.5])
-        ax.set_ylim([-0.5,0.5])
-        ax.set_zlim([-0.5,0.5])
-        ax.set_title("prediction view (0,0)")
-        plt.axis("off")
-        ax.view_init(0, 0)
+            ax = fig.add_subplot(155, projection='3d')
+            ax.scatter(prediction[0,:,2], prediction[0,:,0], prediction[0,:,1], s= 2)
+            ax.set_xlim([-0.5,0.5])
+            ax.set_ylim([-0.5,0.5])
+            ax.set_zlim([-0.5,0.5])
+            ax.set_title("prediction view (30,135)")
+            plt.axis("off")
+            ax.view_init(30, 135)
 
-        ax = fig.add_subplot(155, projection='3d')
-        ax.scatter(prediction[0,:,2], prediction[0,:,0], prediction[0,:,1], s= 2)
-        ax.set_xlim([-0.5,0.5])
-        ax.set_ylim([-0.5,0.5])
-        ax.set_zlim([-0.5,0.5])
-        ax.set_title("prediction view (30,135)")
-        plt.axis("off")
-        ax.view_init(30, 135)
+        elif type=='voxel':
+            ax = fig.add_subplot(152, projection='3d')
+            ax.voxels(ptcloud)
+            ax.set_title("GT view (0,0)")
+            ax.view_init(0, 0)
 
+            ax = fig.add_subplot(153, projection='3d')
+            ax.voxels(ptcloud)
+            ax.set_title("GT view (30,135)")
+            ax.view_init(30, 135)
+
+            ax = fig.add_subplot(154, projection='3d')
+            ax.voxels(prediction)
+            ax.set_title("prediction view (0,0)")
+            ax.view_init(0, 0)
+
+            ax = fig.add_subplot(155, projection='3d')
+            ax.voxels(prediction)
+            ax.set_title("prediction view (30,135)")
+            ax.view_init(30, 135)
+        
+        elif type=='voxel_cords':
+            if len(ptcloud.shape) == 2:
+                ptcloud = ptcloud.unsqueeze(0)
+            if len(prediction.shape) == 2:
+                prediction = prediction.unsqueeze(0)
+            ax = fig.add_subplot(152, projection='3d')
+            ax.scatter(ptcloud[0,:,2], ptcloud[0,:,0], ptcloud[0,:,1], s= 2)
+            ax.set_xlim([0,128])
+            ax.set_ylim([0,128])
+            ax.set_zlim([0,128])
+            ax.set_title("GT view (0,0)")
+            ax.view_init(0, 0)
+
+            ax = fig.add_subplot(153, projection='3d')
+            ax.scatter(ptcloud[0,:,2], ptcloud[0,:,0], ptcloud[0,:,1], s= 2)
+            ax.set_xlim([0,128])
+            ax.set_ylim([0,128])
+            ax.set_zlim([0,128])
+            ax.set_title("GT view (30,135)")
+            ax.view_init(30, 135)
+
+            ax = fig.add_subplot(154, projection='3d')
+            ax.scatter(prediction[0,:,2], prediction[0,:,0], prediction[0,:,1], s= 2)
+            ax.set_xlim([0,128])
+            ax.set_ylim([0,128])
+            ax.set_zlim([0,128])
+            ax.set_title("prediction view (0,0)")
+            ax.view_init(0, 0)
+
+            ax = fig.add_subplot(155, projection='3d')
+            ax.scatter(prediction[0,:,2], prediction[0,:,0], prediction[0,:,1], s= 2)
+            ax.set_xlim([0,128])
+            ax.set_ylim([0,128])
+            ax.set_zlim([0,128])
+            ax.set_title("prediction view (30,135)")
+            ax.view_init(30, 135)
+            plt.title("mIoU is %.4f"%loss)
+
+        
         title = os.path.join(path, "%s_%d" % (split_name,idx))
         fig.savefig(title, bbox_inches='tight')
         plt.close()

@@ -454,6 +454,17 @@ class Normalization(Operation):
         scaling_factor = torch.sqrt(scaling_factor_square)
         self.scale(1.0 / scaling_factor)
         return self.points
+    
+    def normalize_voxel(self):
+        center = torch.tensor([[[63.5, 63.5, 63.5]]])
+        centroid = torch.mean(self.points, dim=1, keepdim=True)
+        self.translate(center-centroid)
+        scaling_factor_square, _ = torch.max(torch.sum((self.points-center) ** 2, dim=2, keepdim=True), dim=1, keepdim=True)
+        scaling_factor = torch.sqrt(scaling_factor_square)
+        self.scale(64.0 / scaling_factor)
+        return self.points
+
+
 
     @staticmethod
     def normalize_unitL2ball_functional(points):
@@ -499,6 +510,15 @@ class Normalization(Operation):
         return points
 
 
+def find_median(List): # finds the median of a sorted_list
+    number_of_data = len(List)
+    if number_of_data % 2 == 0:
+        median = (List[(number_of_data//2)]+List[(number_of_data//2-1)])/2
+    else:
+        median = List[(number_of_data//2)]
+    return median
+
+    
 class TrainTestMonitor(object):
 
     def __init__(self, log_dir, plot_loss_max=4., plot_extra=False):
