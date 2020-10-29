@@ -18,6 +18,8 @@ import time
 import utils.plot_image_grid as plot_image_grid
 from utils.plot_log import plot_log as plot_log
 from dataset.dataset import what3d_dataset_views
+#from utils.f_score import threshold_list, f_score_list
+from utils.loss import ChamferDistanceReNorm
 
 
 class Stats(object):
@@ -73,9 +75,15 @@ class TrainTester(object):
         self.stats_finecd_epochtest = Stats()
         self.stats_finecd_epochval = Stats()
         self.stats_finecd_itertest = Stats()
-
         self.stats_lr_itertrain = Stats()
         self.finalchamferloss = Stats()
+
+        self.fscore_renorm = args.fscore_renorm
+        self.fscore = {"f": {}, "p": {}, "r": {}}
+        # for key in self.fscore:
+        #     for th in threshold_list:
+        #         self.fscore[key].update({f"{th}":[]})
+        # self.chamReNorm = ChamferDistanceReNorm(device=args.device)
 
         self.running_loss = None
         self.running_factor = 0.9
@@ -88,6 +96,7 @@ class TrainTester(object):
         self.lambda_loss_fine = args.lambda_loss_fine
         self.save_results = args.save_results
         self.log_dir = args.log_dir
+        self.normalize = args.normalize
         self.vis_dir = os.path.join(args.log_dir,'final_vis')
         self.tensorboard_dir = os.path.join(self.log_dir,'../../sum_runs')
         self.stats_dir = os.path.join(self.log_dir,'stats')
@@ -108,7 +117,7 @@ class TrainTester(object):
                                                     args.num_layers, args.template_type, args.nb_primitives, 
                                                     args.hidden_neurons, args.bottleneck_size, args.nb_primitives, args.template_type)
             else:
-                tensor_comment = "{}_{}_BS{}_noBN{}_LR{}_NumL{}_Width{}_latent{}".format(args.model, args.mode, args.train_batch_size, 
+                tensor_comment = "{}_{}_BS{}_Block_{}_noBN{}_LR{}_NumL{}_Width{}_latent{}".format(args.model, args.mode, args.train_batch_size, args.decoderBlock, 
                                                     args.remove_all_batchNorms, args.lr_G, args.num_layers, 
                                                     args.hidden_neurons, args.bottleneck_size) 
             self.writer = SummaryWriter(comment=tensor_comment)
@@ -205,7 +214,10 @@ class TrainTester(object):
             
             elif self.model == 'atlasnet':
                 ptcloud_pred_fine, codeword = self.netG(image, train=True)
-                ptcloud_pred_fine = ptcloud_pred_fine.view(ptcloud_pred_fine.size(0), 1, -1, ptcloud_pred_fine.size(3)).squeeze(1)
+                ptcloud_pred_fine = ptcloud_pred_fine.transpose(2, 3).contiguous()
+                ptcloud_pred_fine = ptcloud_pred_fine.view(ptcloud_pred_fine.size(0), -1, 3)
+                #ptcloud_pred_fine = ptcloud_pred_fine.view(ptcloud_pred_fine.size(0), 1, -1, ptcloud_pred_fine.size(3)).squeeze(1)
+                
                 loss_ptc_fine = self.criterion_G(ptcloud_pred_fine, ptcloud)
                 batch_fineCD_loss = self.lambda_loss_fine * loss_ptc_fine.item()
                 loss_all = self.lambda_loss_fine * loss_ptc_fine
@@ -258,11 +270,12 @@ class TrainTester(object):
         # self.netI.eval()
         self.netG.eval()
         chamfer_loss = 0.
+        bbox_chamfer_loss = 0.
         test_loss = 0.
         counter = 0.              
         batch_idx = 0
 
-        for batch in tqdm.tqdm(loader,total=len(loader)):
+        for batch in tqdm.tqdm(loader, total=len(loader)):
             image, ptcloud = batch['image'], batch['ptcloud']
             image, ptcloud  = \
                 Variable(image).to(self.device), \
@@ -275,25 +288,34 @@ class TrainTester(object):
                     ptcloud_pred_fine, codeword = self.netG(image)
                 elif self.model == 'atlasnet':
                     ptcloud_pred_fine, codeword = self.netG(image, train=False)
-                    ptcloud_pred_fine = ptcloud_pred_fine.view(ptcloud_pred_fine.size(0), 1, -1, ptcloud_pred_fine.size(3)).squeeze(1)
+                    ptcloud_pred_fine = ptcloud_pred_fine.transpose(2, 3).contiguous()
+                    ptcloud_pred_fine = ptcloud_pred_fine.view(ptcloud_pred_fine.size(0), -1, 3)
 
                 loss_ptc_fine = self.criterion_G(ptcloud_pred_fine, ptcloud)
             
+            ########### Extra operation in last test epoch ###########
             if epoch == self.total_epochs + 1:
+                pc_orig, pc2 = \
+                ptcloud.cpu().numpy(), ptcloud_pred_fine.cpu().numpy()
+                code = codeword.cpu().numpy()
+                code = np.squeeze(code)
+                #self.finalchamferloss.push(batch_idx, loss = loss_ptc_fine.item())
+                img = image.cpu()
+                what3d_dataset_views.data_visualizer(pc_orig, pc2, img, type, self.vis_dir, batch_idx, type=f'pt_{self.normalize}')
                 if self.save_results:
-                    pc_orig, pc2 = \
-                    ptcloud.cpu().numpy(), ptcloud_pred_fine.cpu().numpy()
-                    
-                    code = codeword.cpu().numpy()
-                    code = np.squeeze(code)
-                    self.finalchamferloss.push(batch_idx, loss = loss_ptc_fine.item())
-                    img = image.cpu()
-                #np.save('%s/oriptcloud_%04d.npy' % (self.vis_dir, batch_idx),pc_orig)
-                #np.save('%s/codeword_%04d.npy'%(self.vis_dir, batch_idx),code)
+                    np.save('%s/oriptcloud_%04d.npy' % (self.vis_dir, batch_idx), pc_orig)
+                    #np.save('%s/codeword_%04d.npy'%(self.vis_dir, batch_idx), code)
+                    #np.save('%s/fineptcloud_%04d.npy'%(self.vis_dir, batch_idx), pc2)
                 
-                    what3d_dataset_views.data_visualizer(pc_orig, pc2, img, type, self.vis_dir, batch_idx)
-                #    np.save('%s/fineptcloud_%04d.npy'%(self.vis_dir, batch_idx),pc2)
+                ##################  F-SCORE    ###############
+                # for th in threshold_list:
+                #    f_p_r = f_score_list(th=th, pred_set=pc2, gt_set=pc_orig, normalize=self.fscore_renorm)
+                #    self.fscore["f"][f"{th}"] += f_p_r[0]
+                #    self.fscore["p"][f"{th}"] += f_p_r[1]
+                #    self.fscore["r"][f"{th}"] += f_p_r[2]
                 
+                # ################ BBox Chamfer ##############
+                # bbox_chamfer_loss += self.chamReNorm(pc_orig, pc2, renorm="bbox").item()
 
             batch_idx += 1
             chamfer_loss += loss_ptc_fine.item()     
@@ -302,7 +324,8 @@ class TrainTester(object):
 
         test_loss = test_loss / float(counter)
         chamfer_loss = chamfer_loss / float(counter)
-
+        
+    
         if type == 'test' and self.if_train:
             self.stats_finecd_itertest.push(self.train_iter, loss=chamfer_loss)
             self.stats_finecd_epochtest.push(epoch, loss = chamfer_loss)
@@ -314,8 +337,43 @@ class TrainTester(object):
             plot_log(self.stats_dir, ["stats_finecd_epochval.npz", "stats_finecd_itertrain.npz",
                 "stats_finecd_epochtrain.npz"])
         self.logger.info('{} set (epoch={:<3d}): AverageLoss={:.6f}: ChamferLoss={:.6f}: '.format(type, epoch, test_loss, chamfer_loss))
+        # if epoch == self.total_epochs + 1:
+        #     bbox_chamfer_loss = bbox_chamfer_loss / float(counter)
+        #     self.logger.info('{} set (epoch={:<3d}): BBox ChamferLoss={:.6f}: '.format(type, epoch, bbox_chamfer_loss))
+        #     np.save(os.path.join(self.stats_dir, "f_score_{}.npy".format(self.fscore_renorm)), self.fscore)
+        #     for key in self.fscore:
+        #         self.logger.info(f"{key}: ")
+        #         score_list = ""
+        #         th_list = ""
+        #         for th in self.fscore[key]:
+        #             score_list += "%.5f  " % (sum(self.fscore[key][th])/len(self.fscore[key][th]))
+        #             th_list += "%s   "% th
+        #         self.logger.info(th_list)
+        #         self.logger.info(score_list)
+        #         self.logger.info("----------------------------")
 
         return chamfer_loss
+
+    def generate_mesh(self, epoch, loader, type):
+        self.netG.eval()
+        chamfer_loss = 0.
+        test_loss = 0.
+        counter = 0.              
+        batch_idx = 0
+        for batch in tqdm.tqdm(loader,total=len(loader)):
+            image, ptcloud = batch['image'], batch['ptcloud']
+            image, ptcloud  = \
+                Variable(image).to(self.device), \
+                Variable(ptcloud).to(self.device), \
+            
+            with torch.set_grad_enabled(False):
+                if self.model == 'atlasnet':
+                    pred_mesh = self.netG.generate_mesh(image)
+                    np.save(os.path.join(self.vis_dir, "mesh_vertices_%d.npy" % (batch_idx)), pred_mesh.vertices)
+                    np.save(os.path.join(self.vis_dir, "mesh_faces_%d.npy" % (batch_idx)), pred_mesh.faces)
+
+            batch_idx += 1
+
 
     def run(self, train_loader, test_loader, val_loader):
         

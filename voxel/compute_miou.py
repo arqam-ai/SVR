@@ -10,15 +10,16 @@ from pyntcloud import PyntCloud
 from collections import defaultdict
 import matplotlib.pyplot as plt
 sys.path.append("../")
-from utils.utils import Normalization
+from utils.utils import Normalization, trimesh_remove_texture
 import argparse
 import utils.binvox_rw as binvox_rw
 import tqdm
 import torch
-
-
+import trimesh
+#from utils.trimesh.trimesh.voxel.creation import local_voxelize
 import sys, os, glob
 import scipy.ndimage as nd
+#import kaolin as kal
 
 def class_counter(args, split_name):
     f_class = open(os.path.join(args.data_basedir, args.splits_path, args.class_path),"r")
@@ -74,6 +75,8 @@ def convert_ptc_to_voxel(ptc, n_x=128, n_y=128, n_z=128):
     cords = np.concatenate((x_cords, y_cords, z_cords), axis=0)
     
     return cords, voxel
+
+
 
 def resize(voxel, shape):
     """
@@ -231,6 +234,59 @@ def convert(args):
     print(normed_voxel_cords.shape)
     plot_cords(normed_voxel_cords, title="normed_voxel_cords_{}".format(index), save_file="../img/voxel/normed_voxel_cords_{}.png".format(index))
 
+def test_mesh2voxel(path):
+    
+    # test_mesh = trimesh.creation.uv_sphere(radius=1.0, count=[32, 32])
+    # #voxel = trimesh.voxel.local_voxelize(test_mesh, point=test_mesh.centroid, pitch= test_mesh.extents.max() / 128, radius=64, fill=True)
+    # voxel = test_mesh.voxelized(pitch= test_mesh.extents.max() / 128)
+    # points = voxel.points      #(1128955, 3)
+
+    # # points = trimesh.sample.volume_mesh(test_mesh, count=10000)
+    # cords, voxel = convert_ptc_to_voxel(convert_array_to_dataframe(points))
+    # plot_cords(cords, title="test trimesh Voxel %d"%3 , save_file="../img/voxel/trimesh_voxel/test_trimesh_%d.png"%3)
+    
+    # for index in range(53):
+    #     print(index)
+    #     vertices = np.load(os.path.join(path, "mesh_vertices_%d.npy" % index))
+    #     faces = np.load(os.path.join(path, "mesh_faces_%d.npy" % index))
+    #     mesh = trimesh.Trimesh(vertices=vertices, faces=faces)
+    #     points = trimesh.sample.volume_mesh(mesh, count=10000)
+    #     cords, voxel = convert_ptc_to_voxel(convert_array_to_dataframe(points))
+    #     plot_cords(cords, title="AtlasNet Voxel %d"%index, save_file="../img/voxel/atlasnet_voxel/test_sample_%d,png"%index)
+        
+    for index in range(53):
+        print(index)
+        vertices = np.load(os.path.join(path, "mesh_vertices_%d.npy" % index))
+        faces = np.load(os.path.join(path, "mesh_faces_%d.npy" % index))
+        mesh = trimesh.Trimesh(vertices=vertices, faces=faces)
+        voxel = mesh.voxelized(pitch= mesh.extents.max() / 128)
+        points = voxel.points
+        cords, voxel = convert_ptc_to_voxel(convert_array_to_dataframe(points))
+        print(voxel.shape)
+        #plot_cords(cords, title="trimesh Voxel %d"%index, save_file="../img/voxel/atlasnet_voxel/trimesh_sample_%d.png"%index)
+        plot_cords(cords)
+
+    #######Mesh visualization
+    '''
+    for index in range(53):
+        vertices = np.load(os.path.join(path, "mesh_vertices_%d.npy" % index))
+        faces = np.load(os.path.join(path, "mesh_faces_%d.npy" % index))
+        #faces = torch.from_numpy(faces).long()
+        #mesh = kal.rep.TriangleMesh.from_tensors(torch.from_numpy(vertices), faces)
+        #voxel = kal.conversions.meshconversions.trianglemesh_to_voxelgrid(mesh, resolution=128)
+        #voxel = voxel>0
+        #voxel = voxel.numpy()
+        #cords = np.argwhere(voxel)
+        #cords = np.transpose(cords, (1, 0))
+        #print(cords.shape)
+        #for i in range(cords.shape[0]):
+        #    print(cords[i])
+        #plot_cords(cords, title="AtlasNet Voxel %d"%index, save_file="../img/voxel/atlasnet_voxel/test_sample_%d,png"%index)
+        mesh = trimesh.Trimesh(vertices=vertices, faces=faces)
+        mesh.show()
+    '''
+
+
 def vis(ptcloud_pth):
     ptcloud = np.load(ptcloud_pth)
     plot_cords(ptcloud)
@@ -253,5 +309,6 @@ if __name__ == "__main__":
     args = parser.parse_args(sys.argv[1:])
     #args.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     args.script_folder = os.path.dirname(os.path.abspath(__file__))
-    convert(args)
+    #convert(args)
     #vis("../img/voxel/test_cords_13000.npy")
+    test_mesh2voxel(path="../experiment/object_models_v2/mesh_generation/partial_final_vis")

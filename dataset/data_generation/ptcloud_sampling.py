@@ -1,6 +1,6 @@
 import os
 import sys
-sys.path.append('../')
+sys.path.append('../../')
 import open3d as o3d
 import trimesh 
 import argparse
@@ -25,7 +25,7 @@ def create_ptcloud_folder(dataset_path, model_path, points_dirname, num_points, 
     class_num = 0
     counter = 0
     fname = 'ptcloud'
-    pbar = tqdm(total = instance_num)
+    #pbar = tqdm(total = instance_num)
     for cl in f_class:
         index = cl.find(' ')
         class_num += 1
@@ -47,8 +47,9 @@ def create_ptcloud_folder(dataset_path, model_path, points_dirname, num_points, 
                 ptcloud = obj_mesh.sample_points_uniformly(number_of_points = num_points)
                 o3d.io.write_point_cloud(ptcloud_path, ptcloud)
                 counter += 1
-                pbar.update(n=1)
-    pbar.close()
+                print(counter)
+                #pbar.update(n=1)
+    #pbar.close()
     print('Total Instance Number: %d, Total Class Number: %d' % (counter, class_num))
     
 def visualize_points():
@@ -62,13 +63,13 @@ def main(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='object-centered mode')
-    parser.add_argument("--dataset-path",type=str,default="/home/../../public/zyf/What3D/",
+    parser.add_argument("--dataset-path",type=str,default="../../../What3D/",
                         help='path to dataset')
-    parser.add_argument("--points-dirname",type=str,default="points_1024_obj",
+    parser.add_argument("--points-dirname",type=str,default="points_object_dense",
                         help='path to save sampled pointcloud')                    
-    parser.add_argument("--model-path",type=str,default="/home/../../public/zyf/ShapeNetCore.v2",
+    parser.add_argument("--model-path",type=str,default="../../../ShapeNetCore.v2",
                         help='path of load mesh model')
-    parser.add_argument("--num-points",type=int,default=1024,
+    parser.add_argument("--num-points",type=int,default=10000,
                         help='number of points to sample')    
     args = parser.parse_args()
     print(str(args))

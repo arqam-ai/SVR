@@ -1,3 +1,7 @@
+"""
+    This is script to eval Chamfer Loss
+    Author: Yefan Zhou
+"""
 import os
 import sys
 import argparse
@@ -8,7 +12,6 @@ import numpy as np
 import torch
 import tqdm
 from utils.utils import Normalization
-
 
 chamfer = ChamferDistance().to("cuda")
 gt = np.load("../../What3D/ptcloud_object.npz")['test']

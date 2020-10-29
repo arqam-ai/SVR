@@ -7,7 +7,7 @@ import numpy as np
 import random
 
 parser = argparse.ArgumentParser(sys.argv[0])
-parser.add_argument("--ptcloud-path",dest="ptcloud_path", type=str,default="points_1024_obj",
+parser.add_argument("--ptcloud-path",dest="ptcloud_path", type=str,default="points_object_1024_upbound",
                         help='path of the ptcloud')
 parser.add_argument("--img-path", dest="img_path", type=str, default='renderings',
                     help='path of the image')
@@ -59,8 +59,9 @@ def compress(args, origin_name = '1.ply', compressed_name = 'ptcloud_1.npz'):
             pt_index += 1
         ptcloud_set_dic[split_name] = ptcloud_set
 
-    np.savez(os.path.join(args.data_basedir, compressed_name), train = ptcloud_set_dic['train'], 
-                                            val = ptcloud_set_dic['val'], test = ptcloud_set_dic['test'])
+    np.save(os.path.join(args.data_basedir, compressed_name), ptcloud_set_dic['test'])
+    #np.savez(os.path.join(args.data_basedir, compressed_name), train = ptcloud_set_dic['train'], 
+    #                                        val = ptcloud_set_dic['val'], test = ptcloud_set_dic['test'])
 
 def check(args, view):
     '''check if the '''
@@ -103,13 +104,14 @@ def class_counter(indexfile):
         class_num += 1
     return class_list, class_dic
 
-#compress(args)
+compress(args, origin_name = 'ptcloud.ply', compressed_name='pts1024_upbound_test.npy')
+
 #check(args)
 '''
 for view in range(0,5):
     #compress(args, origin_name='%d.ply'%view, compressed_name='ptcloud_%d.npz'%view) 
     check(args, view)
 '''
-for view in ['ptcloud']:
-    #compress(args, origin_name='%d.ply'%view, compressed_name='ptcloud_%d.npz'%view) 
-    check(args, view)
+# for view in ['ptcloud']:
+#     #compress(args, origin_name='%d.ply'%view, compressed_name='ptcloud_%d.npz'%view) 
+#     check(args, view)

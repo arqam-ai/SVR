@@ -11,10 +11,10 @@ from matplotlib import pyplot as plt
 from mpl_toolkits.mplot3d import axes3d, axis3d, proj3d
 import argparse
 import cv2
-from sklearn.manifold import TSNE
+#from sklearn.manifold import TSNE
 import os
 import tqdm
-import seaborn as sns
+#import seaborn as sns
 import math
 
 def colormap2d(nx=45, ny=45):

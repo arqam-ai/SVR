@@ -18,10 +18,11 @@ def parser():
 
     ## training parameter
     parser.add_argument("--SVR", action="store_true", default = True, help="Single_view Reconstruction")
-    parser.add_argument("--model",dest="model", type=str,default="foldingres",help=['foldingres','psgn','atlasnet'])
-    parser.add_argument("--train", action="store_true",dest="train",default= False,help="run training", )
-    parser.add_argument("--test", action="store_true",dest="test",default= False,help="run testing (generate ptcloud)", )
-    
+    parser.add_argument("--model",dest="model", type=str, default="foldingres", help=['foldingres','psgn','atlasnet'])
+    parser.add_argument("--train", action="store_true", dest="train", default= False, help="run training", )
+    parser.add_argument("--test", action="store_true", dest="test", default= False, help="run testing (generate ptcloud)", )
+    parser.add_argument("--generate-mesh", action="store_true", dest="generate_mesh", default=False, help='atlasnet generate mesh')
+
     parser.add_argument('--num_layers', type=int, default=2, help='number of hidden MLP Layer')
     parser.add_argument('--hidden_neurons', type=int, default=512, help='number of neurons in each hidden layer')
     parser.add_argument('--bottleneck_size', type=int, default=1024, help='dim_out_patch')
@@ -30,8 +31,10 @@ def parser():
     parser.add_argument('--template_type', type=str, default="SQUARE", choices=["SPHERE", "SQUARE"],
                         help='dim_out_patch')
     parser.add_argument("--remove_all_batchNorms", action="store_true", default=False, help="Replace all batchnorms by identity")
+    parser.add_argument("--decoderBlock", type=str, default=None, help="[ResnetFC, ResnetFCBN, ResnetFCGN, FC, FCBN, FCGN]")
     parser.add_argument('--activation', type=str, default='relu',
              choices=["relu", "sigmoid", "softplus", "logsigmoid", "softsign", "tanh"], help='dim_out_patch')
+    
     
     parser.add_argument("--total-epochs",dest="total_epochs", type=int,default=300,help='training epochs')
     parser.add_argument("--train-batch-size",dest="train_batch_size", type=int,default=128,help='training batch size')
@@ -49,6 +52,9 @@ def parser():
     parser.add_argument("--mode", dest="mode", type=str,default="object", help="['viewer', 'object']")
     parser.add_argument("--image-size",   dest="image_size",   type=int, default = 224, help="image size for network")
     parser.add_argument("--sample-ratio", dest="sample_ratio", type=float, default = 0.001, help="ratio to sample the dataset")
+    parser.add_argument("--normalize", dest="normalize", type=str, default="unitL2ball", help="[bbox, unitL2ball]")
+    parser.add_argument("--fscore-renorm", dest="fscore_renorm", type=str, default="unitL2ball", help="[bbox, unitL2ball]")
+
     parser.add_argument("--views", dest="views", type=str,default= '0', help="five view for each instance")
     parser.add_argument("--pts-num", dest="pts_num", type=int, default=1024,help="number of points in a ptcloud")
     parser.add_argument("--class-num", dest="class_num", type=int, default=55, help="number of classes" )

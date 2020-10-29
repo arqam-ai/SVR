@@ -3,6 +3,9 @@ import numpy as np
 import torch
 import torch.nn as nn
 import csv
+sys.path.append("../")
+from utils.utils import normalize_bbox
+#from utils.f_score import BBOX
 #from utils.PyTorchEMD.emd import earth_mover_distance
 # Define Chamfer Loss
 #from pytorch3d.loss import chamfer_distance
@@ -52,6 +55,29 @@ class ChamferDistanceL2(nn.Module):
         loss_ptc_fine_atlas = torch.mean(dist1) + torch.mean(dist2)
         return loss_ptc_fine_atlas
 
+class ChamferDistanceReNorm(nn.Module):
+    def __init__(self, device):
+        super(ChamferDistanceReNorm, self).__init__()
+        self.device = device
+        self.chamLoss = ChamferDistance().to(self.device)
+        
+    def forward(self, input1, input2, renorm="bbox"):
+        """
+        Params:
+        ----------
+
+        Returns:
+        ----------
+        """
+        if renorm == "bbox":
+            input1 = normalize_bbox(input1, bbox=BBOX, isotropic=True)
+            input2 =  normalize_bbox(input2, bbox=BBOX, isotropic=True)
+        input1 = torch.from_numpy(input1).to(self.device)
+        input2 = torch.from_numpy(input2).to(self.device)
+
+        return self.chamLoss(input1, input2)
+
+        
 
 
 def evaluate_voxel_prediction(prediction, gt):

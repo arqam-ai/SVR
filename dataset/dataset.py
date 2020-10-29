@@ -16,7 +16,7 @@ import numpy as np
 import random
 import matplotlib.pyplot as plt
 sys.path.append('../')
-from utils.utils import Normalization
+from utils.utils import Normalization, normalize_bbox
 from utils.visualize_pts import draw_pts, colormap2d
 
 def class_counter(indexfile):
@@ -33,6 +33,47 @@ def class_counter(indexfile):
         class_num += 1
     return class_list, class_dic
 
+def load_class_ptcloud(ptcloud_path, views, class_index_dic, class_name):
+    """
+    Params:
+    ----------
+    ptcloud_path    : str
+        path to point cloud 
+    views           : str 
+        views
+    class_index_dic : dic
+    class_name      : str
+
+    Returns:
+    ---------- 
+    train_set       : numpy.array 
+    test_set        : numpy.array
+    """
+    ptcloud_dic = {'train':{}, 'test':{}}
+    for view in list(args.views):
+        logger.info("view {}".format(view))
+        ptcloud_path = args.ptcloud_path[:-5] + '%s.npz'%view
+        ptcloud = np.load(ptcloud_path)
+        train_set = torch.from_numpy(ptcloud['train'])
+        test_set = torch.from_numpy(ptcloud['test'])
+        train_set = Normalization(train_set, inplace=True, keep_track=False).normalize_unitL2ball()
+        test_set = Normalization(test_set, inplace=True, keep_track=False).normalize_unitL2ball()
+
+        train_idx = class_index_dic['train'][class_name][0]
+        train_slicer = class_index_dic['train'][class_name][1]
+        test_idx = class_index_dic['test'][class_name][0]
+        test_slicer = class_index_dic['test'][class_name][1]
+        if view == '0':
+            ptcloud_dic['train'][class_name] = train_set[train_idx:train_slicer]
+            ptcloud_dic['test'][class_name] = test_set[test_idx:test_slicer]
+        else:
+            ptcloud_dic['train'][class_name] = torch.cat((ptcloud_dic['train'][class_name], train_set[train_idx:train_slicer]), 0)
+            ptcloud_dic['test'][class_name] =  torch.cat((ptcloud_dic['test'][class_name], test_set[test_idx:test_slicer]), 0)
+
+    train_set = ptcloud_dic['train'][class_name]
+    test_set = ptcloud_dic['test'][class_name]
+
+    return train_set, test_set
 
 
 class what3d_dataset_views(Dataset):
@@ -49,7 +90,8 @@ class what3d_dataset_views(Dataset):
                        image_width=224,
                        points_num=1024, 
                        read_view=False,
-                       mode = 'viewer'):
+                       mode = 'viewer',
+                       normalize='unitL2ball'):
         self.image_height = image_height
         self.image_width = image_width
         self.data_basedir = data_basedir
@@ -57,14 +99,14 @@ class what3d_dataset_views(Dataset):
         self.img_view_list = list()
         self.class_list, _ = class_counter(os.path.join(self.data_basedir, splits_path, class_path))
         image_path_list = list()
-
-        ## Load the total instance path
+        ####################### Load the total instance path   #####################
         for clname in self.class_list:
             f = open(os.path.join(data_basedir, splits_path, 'lists', clname, '%s.txt'%split_name),"r")
             for x in f:
                 instance_id = x[:-1]
                 image_path_list.append(os.path.join(data_basedir, img_path, clname, instance_id))
-        
+
+        ####################### Load the point cloud in two mode (viewer and object center)   #####################
         if self.mode == 'viewer':
             for idx, view in enumerate(views):
                 ptcloud_path = ptcloud_path[:-5] + '%s.npz'%view
@@ -75,9 +117,9 @@ class what3d_dataset_views(Dataset):
         elif self.mode == 'object':
             ptcloud_path = ptcloud_path[:-5] + '%s.npz'%"object"
             self.data_ptcloud = np.load(os.path.join(data_basedir, ptcloud_path))[split_name]
-        ## if sample ratio < 1.0, then sample the path list 
-        total_instance_num = len(image_path_list)
         
+        ####################### Randomly Sample dataset if needed ###############################
+        total_instance_num = len(image_path_list)
         if abs(sample_ratio - 1.0) > 1e-6:
             sampled_instance_num = int(total_instance_num * sample_ratio)
             ## Sample the instance path 
@@ -92,15 +134,28 @@ class what3d_dataset_views(Dataset):
 
         self.ptcloud_num = self.data_ptcloud.shape[0]
         self.instance_num = len(views) * sampled_instance_num
+
+        ############################### Load Image Path   #######################################
         self.convertor = transforms.ToPILImage()
         for view_idx, view in enumerate(views):
             for i in range(sampled_instance_num):
                 self.img_view_list.append(os.path.join(image_path_list[i], '%s.png'%view))
 
-        self.data_ptcloud = torch.from_numpy(self.data_ptcloud).float()
-        self.data_ptcloud = Normalization(self.data_ptcloud, inplace=True, keep_track=False).normalize_unitL2ball()
-        
-        
+                
+        ########################## Normalization             ###############################
+        if normalize == "unitL2ball":
+            print("mode: {}, Normalization: {}".format(mode, normalize))
+            self.data_ptcloud = torch.from_numpy(self.data_ptcloud).float()
+            self.data_ptcloud = Normalization(self.data_ptcloud, inplace=True, keep_track=False).normalize_unitL2ball()
+        elif normalize == "bbox" and mode == "object":
+            print("mode: {}, Normalization: {}".format(mode, normalize))
+            bbox = np.array([[[0, 0, 0], [1.0, 1.0, 1.0]]])
+            self.data_ptcloud = normalize_bbox(self.data_ptcloud, bbox, isotropic=True)
+            self.data_ptcloud = torch.from_numpy(self.data_ptcloud).float()
+        elif normalize == "bbox" and mode == "viewer":
+            print("mode: {}, Normalization: {}".format(mode, normalize))
+            self.data_ptcloud = torch.from_numpy(self.data_ptcloud).float()
+
     def __len__(self):
         return self.instance_num
 
@@ -130,59 +185,61 @@ class what3d_dataset_views(Dataset):
         return res_index
 
     @staticmethod
-    def data_visualizer(ptcloud, prediction, image, split_name, path, idx, loss=0.0, type='pt'):
+    def data_visualizer(ptcloud, prediction, image, split_name, path, idx, loss=0.0, type='pt_unitL2ball'):
 
         fig = plt.figure(figsize=(20, 4))
 
         ax = fig.add_subplot(151)
-        if isinstance(image, np.ndarray):
-            image = image[0].transpose((1, 2, 0))
-        else: 
+        if not isinstance(image, np.ndarray):
             image = image[0].transpose(0,1)
             image = image.transpose(1,2)
 
         ax.imshow(image)
         plt.axis("off")
-        
-        if type=='pt':
+        if type=='pt_bbox':
+            axis_range = [0, 1]
+        elif type=="pt_unitL2ball":
+            axis_range = [-1, 1]
+
+        if type=='pt' or type=='pt_bbox' or type=='pt_unitL2ball':
             if len(ptcloud.shape) == 2:
                 ptcloud = ptcloud.unsqueeze(0)
             if len(prediction.shape) == 2:
                 prediction = prediction.unsqueeze(0)
             ax = fig.add_subplot(152, projection='3d')
             ax.scatter(ptcloud[0,:,2], ptcloud[0,:,0], ptcloud[0,:,1], s= 2)
-            ax.set_xlim([-0.5,0.5])
-            ax.set_ylim([-0.5,0.5])
-            ax.set_zlim([-0.5,0.5])
+            ax.set_xlim(axis_range)
+            ax.set_ylim(axis_range)
+            ax.set_zlim(axis_range)
             ax.set_title("GT view (0,0)")
-            plt.axis("off")
+            #plt.axis("off")
             ax.view_init(0, 0)
 
             ax = fig.add_subplot(153, projection='3d')
             ax.scatter(ptcloud[0,:,2], ptcloud[0,:,0], ptcloud[0,:,1], s= 2)
-            ax.set_xlim([-0.5,0.5])
-            ax.set_ylim([-0.5,0.5])
-            ax.set_zlim([-0.5,0.5])
+            ax.set_xlim(axis_range)
+            ax.set_ylim(axis_range)
+            ax.set_zlim(axis_range)
             ax.set_title("GT view (30,135)")
-            plt.axis("off")
+            #plt.axis("off")
             ax.view_init(30, 135)
 
             ax = fig.add_subplot(154, projection='3d')
             ax.scatter(prediction[0,:,2], prediction[0,:,0], prediction[0,:,1], s= 2)
-            ax.set_xlim([-0.5,0.5])
-            ax.set_ylim([-0.5,0.5])
-            ax.set_zlim([-0.5,0.5])
+            ax.set_xlim(axis_range)
+            ax.set_ylim(axis_range)
+            ax.set_zlim(axis_range)
             ax.set_title("prediction view (0,0)")
-            plt.axis("off")
+            #plt.axis("off")
             ax.view_init(0, 0)
 
             ax = fig.add_subplot(155, projection='3d')
             ax.scatter(prediction[0,:,2], prediction[0,:,0], prediction[0,:,1], s= 2)
-            ax.set_xlim([-0.5,0.5])
-            ax.set_ylim([-0.5,0.5])
-            ax.set_zlim([-0.5,0.5])
-            ax.set_title("prediction view (30,135)")
-            plt.axis("off")
+            ax.set_xlim(axis_range)
+            ax.set_ylim(axis_range)
+            ax.set_zlim(axis_range)
+            ax.set_title("prediction view (30,135)\n chamfer is %.4f"%loss)
+            #plt.axis("off")
             ax.view_init(30, 135)
 
         elif type=='voxel':
@@ -240,16 +297,13 @@ class what3d_dataset_views(Dataset):
             ax.set_xlim([0,128])
             ax.set_ylim([0,128])
             ax.set_zlim([0,128])
-            ax.set_title("prediction view (30,135)")
             ax.view_init(30, 135)
-            plt.title("mIoU is %.4f"%loss)
+            ax.set_title("prediction view (30,135) \n mIoU is %.4f"%loss)
 
         
-        title = os.path.join(path, "%s_%d" % (split_name,idx))
+        title = os.path.join(path, "%s_%d" % (split_name, idx))
         fig.savefig(title, bbox_inches='tight')
         plt.close()
-
-
 
 def validtion(args):
     '''verify that if dataset contain multi view data'''
@@ -285,7 +339,7 @@ def main(args):
                 splits_path=args.splits_path, split_name=test_type, 
                 class_path=args.class_path, sample_ratio=args.sample_ratio,
                 image_height=args.image_size, image_width=args.image_size, 
-                views=list(args.views), points_num = args.pts_num, mode = args.mode),
+                views=list(args.views), points_num = args.pts_num, mode = args.mode, normalize="bbox"),
                 batch_size=args.train_batch_size, shuffle=False,**kwargs)
     
     
@@ -303,10 +357,9 @@ def main(args):
     print(instance_num)
     index = random.sample(range(instance_num), 1)
     multiview_index = what3d_dataset_views.ptcloud_index(index, offset=instance_num, view_num=5)
-    multiview_index = [0] + multiview_index
     for batch_idx, batch in enumerate(train_loader):
         if batch_idx in multiview_index:
-            what3d_dataset_views.data_visualizer(batch['ptcloud'].numpy(), batch['ptcloud'].numpy(), batch['image'], test_type, "../img/dataset/test/viewer", batch_idx)
+            what3d_dataset_views.data_visualizer(batch['ptcloud'].numpy(), batch['ptcloud'].numpy(), batch['image'], f"{test_type}_{index}", "../img/dataset/test/viewer_bbox", batch_idx, type='pt_bbox')
         pbar.update(1)
 
     

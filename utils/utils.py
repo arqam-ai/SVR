@@ -8,6 +8,16 @@ import torch
 from torch.nn import init
 import trimesh
 
+
+def find_median(List): # finds the median of a sorted_list
+    number_of_data = len(List)
+    if number_of_data % 2 == 0:
+        median = (List[(number_of_data//2)]+List[(number_of_data//2-1)])/2
+    else:
+        median = List[(number_of_data//2)]
+    return median
+
+
 def make_dot(var, params=None):
 	""" Produces Graphviz representation of PyTorch autograd graph
 	Blue nodes are the Variables that require grad, orange are Tensors
@@ -158,6 +168,7 @@ def vis_pts(pts, clr, cmap):
     return fig
 
 
+
 def mixup_data(x, y, alpha=1.0, use_cuda=True):
 
     '''Compute the mixup data. Return mixed inputs, pairs of targets, and lambda'''
@@ -202,13 +213,41 @@ def mixup_codeword(y_a, y_b, lam):
 
 
 
-def normalize(self, ptcloud, ptnum, D):
-        assert (ptcloud.shape[0]==1024)
-        points_mean = torch.mean(ptcloud,dim = 0, keepdim=True)
-        points_shifted = ptcloud - points_mean
-        max_norm = torch.max(torch.norm(points_shifted,dim = 1))
-        points_normalized = points_shifted/max_norm
-        return points_normalized
+def normalize_unitL2ball(ptcloud, ptnum, D):
+    assert (ptcloud.shape[0]==1024)
+    points_mean = torch.mean(ptcloud, dim = 0, keepdim=True)
+    points_shifted = ptcloud - points_mean
+    max_norm = torch.max(torch.norm(points_shifted, dim = 1))
+    points_normalized = points_shifted/max_norm
+    return points_normalized
+
+def normalize_bbox(ptcloud, bbox, isotropic=True):
+    """ normalize pointcloud to a bounding box 
+    Params:
+    ----------
+    ptcloud :  numpy.array
+    bbox    :  numpy.array
+    isotropic : boolean
+
+    Returns:
+    ----------
+    
+    """
+    if len(ptcloud.shape) == 2:
+        ptcloud = np.expand_dims(ptcloud, axis=0)
+    min_vals = np.min(ptcloud, 1, keepdims=True)
+    max_vals = np.max(ptcloud, 1, keepdims=True)
+    diameter = max_vals - min_vals                # the length of cube 
+    if isotropic:
+        diameter = np.max(diameter, 2, keepdims=True)
+    ptcloud = ptcloud * (1.0 / diameter)
+    min_vals = np.min(ptcloud, 1, keepdims=True)
+    max_vals = np.max(ptcloud, 1, keepdims=True)
+    bbox_center = np.mean(bbox, 1, keepdims=True)
+    translation_vector = bbox_center - ((min_vals + max_vals) / 2)
+    ptcloud = ptcloud + translation_vector
+    
+    return ptcloud
 
 
 def maskinit_generator(self, mask, B, ptnum, D, z_dims):
@@ -465,7 +504,6 @@ class Normalization(Operation):
         return self.points
 
 
-
     @staticmethod
     def normalize_unitL2ball_functional(points):
         operator = Normalization(points, inplace=False)
@@ -477,10 +515,13 @@ class Normalization(Operation):
         :param points: torch Tensor Batch, N_pts, D_dim
         :return: diameter
         """
+        bbox = np.array([[[0, 0, 0], [1, 1, 1]]])
+        bbox_center = torch.from_numpy(np.mean(bbox, 1, keepdims=True))
         min_vals, _ = torch.min(self.points, 1, keepdim=True)
         max_vals, _ = torch.max(self.points, 1, keepdim=True)
-        self.translate(-(min_vals + max_vals) / 2)
-        return self.points, (max_vals - min_vals) / 2
+
+        self.translate(bbox_center - (min_vals + max_vals) / 2)
+        return self.points,  max_vals - min_vals
 
     @staticmethod
     def center_bounding_box_functional(points):
@@ -495,8 +536,10 @@ class Normalization(Operation):
         :return:
         """
         _, diameter = self.center_bounding_box()
+        
         if isotropic:
             diameter, _ = torch.max(diameter, 2, keepdim=True)
+        
         self.scale(1.0 / diameter)
         return self.points
 

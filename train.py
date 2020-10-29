@@ -13,13 +13,13 @@ import torch.autograd
 import time
 from dataset.dataset import what3d_dataset_views
 from model.generator_res_Folding import GeneratorVanilla
+#from model.generator_folding import GeneratorVanilla
 from model.atlasnet.model import EncoderDecoder
 from argument_parser import parser 
 from utils.utils import count_parameter_num, check_exist_or_mkdirs
 from utils.loss import ChamferDistance
 from traintester import TrainTester
 import model.im2mesh.config as config
-import utils.hiddenlayer.hiddenlayer as hl
 
 abspath = os.path.dirname(os.path.abspath(__file__))
 
@@ -27,38 +27,45 @@ def main(args, logger):
 
     # load data
     starter_time = time.time()
-    kwargs = {'num_workers':4, 'pin_memory':True}
-    logger.info("loading train data ...")
-    train_loader = torch.utils.data.DataLoader(
-                what3d_dataset_views(data_basedir=args.data_basedir, ptcloud_path=args.ptcloud_path, 
-                img_path=args.img_path, label_path=args.label_path, 
-                splits_path=args.splits_path, split_name='train', 
-                class_path=args.class_path, sample_ratio=args.sample_ratio,
-                image_height=args.image_size, image_width=args.image_size, 
-                views=list(args.views),
-                points_num = args.pts_num, mode = args.mode),
-                batch_size=args.train_batch_size, shuffle=True,**kwargs)
-    logger.info("loading test data ...")
-    test_loader = torch.utils.data.DataLoader(
-                        what3d_dataset_views(data_basedir=args.data_basedir, ptcloud_path=args.ptcloud_path, 
-                img_path=args.img_path, label_path=args.label_path, 
-                splits_path=args.splits_path, split_name='test', 
-                class_path=args.class_path, sample_ratio=args.sample_ratio,
-                image_height=args.image_size, image_width=args.image_size, 
-                views=list(args.views),
-                points_num=args.pts_num, mode=args.mode),
-                batch_size=args.test_batch_size, shuffle=False,**kwargs)
+    kwargs = {'num_workers':args.num_worker, 'pin_memory':True}
 
-    logger.info("loading val data ...")
-    val_loader = torch.utils.data.DataLoader(
-                        what3d_dataset_views(data_basedir=args.data_basedir, ptcloud_path=args.ptcloud_path, 
-                img_path=args.img_path, label_path=args.label_path, 
-                splits_path=args.splits_path, split_name='val', 
-                class_path=args.class_path, sample_ratio=args.sample_ratio,
-                image_height=args.image_size, image_width=args.image_size, 
-                views=list(args.views),
-                points_num=args.pts_num, mode = args.mode),
-                batch_size=args.val_batch_size, shuffle=False,**kwargs)
+    if args.test:
+        if args.generate_mesh:
+            args.test_batch_size = 1
+        logger.info("loading test data ...")
+        test_loader = torch.utils.data.DataLoader(
+                            what3d_dataset_views(data_basedir=args.data_basedir, ptcloud_path=args.ptcloud_path, 
+                    img_path=args.img_path, label_path=args.label_path, 
+                    splits_path=args.splits_path, split_name='test', 
+                    class_path=args.class_path, sample_ratio=args.sample_ratio,
+                    image_height=args.image_size, image_width=args.image_size, 
+                    views=list(args.views),
+                    points_num=args.pts_num, mode=args.mode, normalize=args.normalize),
+                    batch_size=args.test_batch_size, shuffle=False,**kwargs)
+
+    if args.train:
+        logger.info("loading train data ...")
+        train_loader = torch.utils.data.DataLoader(
+                    what3d_dataset_views(data_basedir=args.data_basedir, ptcloud_path=args.ptcloud_path, 
+                    img_path=args.img_path, label_path=args.label_path, 
+                    splits_path=args.splits_path, split_name='train', 
+                    class_path=args.class_path, sample_ratio=args.sample_ratio,
+                    image_height=args.image_size, image_width=args.image_size, 
+                    views=list(args.views),
+                    points_num = args.pts_num, mode = args.mode, normalize=args.normalize),
+                    batch_size=args.train_batch_size, shuffle=True,**kwargs)
+
+        logger.info("loading val data ...")
+        val_loader = torch.utils.data.DataLoader(
+                            what3d_dataset_views(data_basedir=args.data_basedir, ptcloud_path=args.ptcloud_path, 
+                    img_path=args.img_path, label_path=args.label_path, 
+                    splits_path=args.splits_path, split_name='val', 
+                    class_path=args.class_path, sample_ratio=args.sample_ratio,
+                    image_height=args.image_size, image_width=args.image_size, 
+                    views=list(args.views),
+                    points_num=args.pts_num, mode=args.mode, normalize=args.normalize),
+                    batch_size=args.val_batch_size, shuffle=False,**kwargs)
+
     logger.info("Initialize cache={}".format(time.time()-starter_time))
     
     if args.model == "foldingres":
@@ -69,8 +76,9 @@ def main(args, logger):
             bottleneck_size=args.bottleneck_size,
             class_num=args.class_num,
             folding_twice=args.folding_twice,
-            device = args.device,
-            remove_all_batchNorms= args.remove_all_batchNorms
+            device=args.device,
+            remove_all_batchNorms=args.remove_all_batchNorms,
+            decoderBlock=args.decoderBlock
             )
 
     elif args.model == 'psgn':
@@ -80,14 +88,7 @@ def main(args, logger):
     elif args.model == 'atlasnet':
         netG = EncoderDecoder(args)
         
-
     netG.to(args.device)
-    # try:
-    #     graph = hl.build_graph(netG, torch.zeros([1, 3, args.image_size, args.image_size]).to(args.device)  )
-    #     graph.save(os.path.join(args.log_dir, "graph.pdf"))
-    # except
-    #     logger.info("Fail to draw network graph") 
-    #     pass
 
     logger.info('Number of parameters={}'.format(count_parameter_num(netG.parameters())))
     logger.info('Network Architecture:')
@@ -131,12 +132,18 @@ def main(args, logger):
     if args.test:
         runner.netG.load_state_dict(torch.load(os.path.join(args.log_dir,"model_train_best.pth")))
         #runner.optimizer_G.load_state_dict(torch.load(os.path.join(args.log_dir,"solver_train_best.pth")))
-
-        runner.test(
-            epoch=args.total_epochs + 1,
-            loader=test_loader,
-            type = 'test'
-        )
+        if args.generate_mesh:
+            runner.generate_mesh(
+                epoch=args.total_epochs + 1,
+                loader=test_loader,
+                type = 'test'
+            )
+        else:
+            runner.test(
+                epoch=args.total_epochs + 1,
+                loader=test_loader,
+                type = 'test'
+            )
         logger.info('Testing Done!')
     
 

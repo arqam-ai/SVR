@@ -86,6 +86,151 @@ class ResnetBlockFCBN(nn.Module):
             
         return self.actvn1(x_s + dx)
 
+
+class ResnetBlockFCGN(nn.Module):
+    '''Fully connected ResNet Block class.
+    '''
+    def __init__(self, size_in, size_out=None, size_h=None, num_groups=4):
+        super().__init__()
+        # Attributes
+        if size_out is None:
+            size_out = size_in
+        
+        if size_h is None:
+            size_h = min(size_in, size_out)
+
+        self.size_in = size_in
+        self.size_h = size_h
+        self.size_out = size_out
+
+        self.fc_0 = nn.Linear(size_in, size_h)
+        self.fc_1 = nn.Linear(size_h, size_out)
+        self.gn_0 = nn.GroupNorm(num_groups, num_channels=size_h)
+        self.gn_1 = nn.GroupNorm(num_groups, num_channels=size_out)
+
+        self.actvn0 = nn.ReLU()
+        self.actvn1 = nn.ReLU()
+
+        if size_in == size_out:
+             self.shortcut = None
+        else:
+             self.shortcut = nn.Linear(size_in, size_out, bias=False)
+
+    def forward(self, x):
+        
+        x_1 = self.gn_0(self.fc_0(x).permute(0, 2, 1))
+        net = self.actvn0(x_1.permute(0, 2, 1))
+        net = self.gn_1(self.fc_1(net).permute(0, 2, 1))
+        dx = net.permute(0, 2, 1)
+
+        if self.shortcut is not None:
+            x_s = self.shortcut(x)
+        else:
+            x_s = x
+            
+        return self.actvn1(x_s + dx)
+
+
+
+class BlockFC(nn.Module):
+    '''Fully connected Block class.
+    '''
+    def __init__(self, size_in, size_out=None, size_h=None):
+        super().__init__()
+        # Attributes
+        if size_out is None:
+            size_out = size_in
+        
+        if size_h is None:
+            size_h = min(size_in, size_out)
+
+        self.size_in = size_in
+        self.size_h = size_h
+        self.size_out = size_out
+
+        self.fc_0 = nn.Linear(size_in, size_h)
+        self.fc_1 = nn.Linear(size_h, size_out)
+        
+        self.actvn0 = nn.ReLU()
+        self.actvn1 = nn.ReLU()
+
+    def forward(self, x):
+        
+        x_1 = self.fc_0(x)
+        net = self.actvn0(x_1)
+        net = self.fc_1(net)
+
+        return self.actvn1(net)
+
+
+class BlockFCBN(nn.Module):
+    '''Fully connected Block class Batch Norm
+    '''
+    def __init__(self, size_in, size_out=None, size_h=None):
+        super().__init__()
+        # Attributes
+        if size_out is None:
+            size_out = size_in
+        
+        if size_h is None:
+            size_h = min(size_in, size_out)
+
+        self.size_in = size_in
+        self.size_h = size_h
+        self.size_out = size_out
+
+        self.fc_0 = nn.Linear(size_in, size_h)
+        self.fc_1 = nn.Linear(size_h, size_out)
+        self.bn_0 = nn.BatchNorm1d(size_h)
+        self.bn_1 = nn.BatchNorm1d(size_out)
+
+        self.actvn0 = nn.ReLU()
+        self.actvn1 = nn.ReLU()
+
+    def forward(self, x):
+        
+        x_1 = self.bn_0(self.fc_0(x).permute(0, 2, 1))
+        net = self.actvn0(x_1.permute(0, 2, 1))
+        net = self.bn_1(self.fc_1(net).permute(0, 2, 1))
+        dx = net.permute(0, 2, 1)
+
+        return self.actvn1(dx)
+
+
+class BlockFCGN(nn.Module):
+    '''Fully connected Block class Batch Norm
+    '''
+    def __init__(self, size_in, size_out=None, size_h=None, num_groups=4):
+        super().__init__()
+        # Attributes
+        if size_out is None:
+            size_out = size_in
+        
+        if size_h is None:
+            size_h = min(size_in, size_out)
+
+        self.size_in = size_in
+        self.size_h = size_h
+        self.size_out = size_out
+
+        self.fc_0 = nn.Linear(size_in, size_h)
+        self.fc_1 = nn.Linear(size_h, size_out)
+        self.gn_0 = nn.GroupNorm(num_groups, num_channels=size_h)
+        self.gn_1 = nn.GroupNorm(num_groups, num_channels=size_out)
+
+        self.actvn0 = nn.ReLU()
+        self.actvn1 = nn.ReLU()
+
+    def forward(self, x):
+        
+        x_1 = self.gn_0(self.fc_0(x).permute(0, 2, 1))
+        net = self.actvn0(x_1.permute(0, 2, 1))
+        net = self.gn_1(self.fc_1(net).permute(0, 2, 1))
+        dx = net.permute(0, 2, 1)
+
+        return self.actvn1(dx)
+
+
 ##### Layer block for onet 
 # Resnet Blocks
 # class ResnetBlockFC(nn.Module):

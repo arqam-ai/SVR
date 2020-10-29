@@ -15,7 +15,8 @@ import sys
 from matplotlib import pyplot as plt
 #from torchvision import models
 import model.resnet as resnet
-from model.layers import ResnetBlockFC, ResnetBlockFCBN
+from model.layers import ResnetBlockFC, ResnetBlockFCBN, ResnetBlockFCGN, BlockFC, BlockFCBN, BlockFCGN
+
 
 class GeneratorSingle(nn.Module):
     def __init__(self, dims):
@@ -27,7 +28,7 @@ class GeneratorSingle(nn.Module):
         return self.mlp.forward(X)
 
 class GeneratorResFC(nn.Module):
-    def __init__(self, hidden_neurons, bottleneck_size, num_layers, activation, input_dim = 2, remove_all_batchNorms=False):
+    def __init__(self, hidden_neurons, bottleneck_size, num_layers, activation, input_dim = 2, remove_all_batchNorms=False, decoderBlock=None):
 
         assert num_layers % 2 == 0, "The number of hidden layer in FoldingNet resnet decoder should be even"
         super(GeneratorResFC, self).__init__()
@@ -72,7 +73,7 @@ class GeneratorResFC(nn.Module):
 class GeneratorVanilla(nn.Module):
 
     def __init__(self, grid_dims, hidden_neurons, num_layers, 
-                 bottleneck_size, class_num, device, folding_twice=False, remove_all_batchNorms=False):
+                 bottleneck_size, class_num, device, folding_twice=False, remove_all_batchNorms=False, decoderBlock=None):
         
         super(GeneratorVanilla,self).__init__()
         u = (torch.arange(0., grid_dims[0]) / grid_dims[0] - 0.5).repeat(grid_dims[1])
@@ -84,7 +85,7 @@ class GeneratorVanilla(nn.Module):
         self.N = grid_dims[0] * grid_dims[1]
 
         self.G1 = GeneratorResFC(hidden_neurons, bottleneck_size, num_layers, 
-                activation='relu', input_dim = 2, remove_all_batchNorms = remove_all_batchNorms)
+                activation='relu', input_dim = 2, remove_all_batchNorms = remove_all_batchNorms, decoderBlock=decoderBlock)
         
         if self.folding_twice:
             self.G2 = GeneratorResFC(hidden_neurons, bottleneck_size, num_layers, 
